@@ -1,14 +1,8 @@
---[[
-    WindUI + OE大肉帮三合一整合脚本
-    业务：杀戮光环｜自动格挡｜全图治疗
-    UI库：WindUI (Footagesus)
-]]
 local WindUI
 do
     local ok, result = pcall(function()
         return require("./src/init")
     end)
-
     if ok then
         WindUI = result
     else
@@ -24,7 +18,6 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local animator = humanoid:WaitForChild("Animator")
 
--- ====================== 全局配置表（WindUI ConfigManager托管） ======================
 local config = {
     KillAura = {
         Enabled = false,
@@ -44,7 +37,6 @@ local config = {
     }
 }
 
--- ====================== 杀戮光环模块 ======================
 local killAuraRunning = false
 local killAuraLoopConn = nil
 
@@ -156,7 +148,6 @@ local function StopKillAura()
     end
 end
 
--- ====================== 自动格挡模块 ======================
 local blocking = false
 local blockTrack = nil
 local blockMarker = nil
@@ -236,11 +227,10 @@ end)
 
 character.ChildRemoved:Connect(function(child)
     if child:IsA("Tool") and child.Name == "Sabre" then
-        onToolUnequipped()
+        onToolUnequipped(child)
     end
 end)
 
--- ====================== 全图治疗模块 ======================
 local healRunning = false
 local healLoopConn = nil
 local healTool = nil
@@ -328,7 +318,6 @@ local function StopHeal()
     end
 end
 
--- ====================== 角色重生全局处理（修复重生所有模块状态） ======================
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoid = character:WaitForChild("Humanoid")
@@ -358,7 +347,6 @@ if config.Heal.Enabled then
     StartHeal()
 end
 
--- ====================== 全局对外API（保留兼容旧外部调用） ======================
 _G.OE_Script = {
     KillAura = {
         Enable = function() config.KillAura.Enabled = true; StartKillAura() end,
@@ -378,7 +366,6 @@ _G.OE_Script = {
     }
 }
 
--- ====================== WindUI 窗口初始化 ======================
 local Window = WindUI:CreateWindow({
     Title = "我们的处决",
     Author = "Made by星火",
@@ -386,7 +373,7 @@ local Window = WindUI:CreateWindow({
     NewElements = true,
     HideSearchBar = false,
     OpenButton = {
-        Title = "我们的处决-星火",
+        Title = "Our execution",
         CornerRadius = UDim.new(1,0),
         StrokeThickness = 3,
         Enabled = true,
@@ -401,7 +388,6 @@ local Window = WindUI:CreateWindow({
 
 local ConfigManager = Window.ConfigManager
 
--- ------------------------------ Tab1：杀戮光环 ------------------------------
 local KillAuraTab = Window:Tab({
     Title = "杀戮光环",
     Icon = "sword"
@@ -459,7 +445,6 @@ KA_Info:Paragraph({
     Desc = "优先扫描AliveZombies文件夹；若无，则遍历全地图非玩家实体。武器必须带有Swing远程事件，支持自动从背包装备。"
 })
 
--- ------------------------------ Tab2：自动格挡 ------------------------------
 local BlockTab = Window:Tab({
     Title = "自动格挡",
     Icon = "shield"
@@ -506,7 +491,6 @@ BL_Info:Paragraph({
     Desc = "装备Sabre武器自动循环格挡；卸下武器立刻停止；重生角色自动恢复格挡逻辑。"
 })
 
--- ------------------------------ Tab3：全图治疗 ------------------------------
 local HealTab = Window:Tab({
     Title = "全图治疗",
     Icon = "heart"
@@ -565,7 +549,6 @@ HL_Info:Paragraph({
     Desc = "必须持有带有HealPlayer、AddTags远程事件的治疗工具；只会治疗血量低于阈值的其他玩家。"
 })
 
--- ------------------------------ Tab4：全局工具 ------------------------------
 local GlobalTab = Window:Tab({
     Title = "全局工具",
     Icon = "settings"
