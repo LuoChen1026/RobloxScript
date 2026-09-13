@@ -6,18 +6,9 @@ do
     if ok then
         WindUI = result
     else
-        local fetchOk, lib = pcall(function()
-            return loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-        end)
-        if fetchOk then
-            WindUI = lib
-        else
-            warn("❌WindUI库加载失败！网络无法访问GitHub，脚本终止")
-            return
-        end
+        WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
     end
 end
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -26,7 +17,7 @@ local player = LP
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local animator = humanoid:WaitForChild("Animator")
-local ORIGINAL_WALKSPEED = 16
+local ORIGINAL_WALKSPEED = humanoid.WalkSpeed
 
 local config = {
     KillAura = {
@@ -34,6 +25,10 @@ local config = {
         Range = 30,
         Interval = 0.5,
         AutoRotate = false,
+    },
+    HitboxMod = {
+        Enabled = false,
+        Scale = 4
     },
     Block = {
         Enabled = true,
@@ -54,25 +49,6 @@ local config = {
     PlayerMod = {
         Enabled = false,
         WalkSpeed = 16
-    },
-    PlayerESP = {
-        Enabled = false,
-        ShowBox = true,
-        ShowName = true,
-        ShowHealth = true,
-        ShowDistance = true,
-        MaxDistance = 280
-    },
-    ZombieESP = {
-        Enabled = false,
-        ShowBox = true,
-        ShowName = true,
-        ShowHealth = true,
-        ShowDistance = true,
-        MaxDistance = 280
-    },
-    ESPGlobal = {
-        RefreshRate = 0.6
     }
 }
 
@@ -86,13 +62,132 @@ local currentTool = nil
 local healRunning = false
 local healLoopConn = nil
 local healTool = nil
-local ESPRefreshLoop = nil
--- ESP缓存池 key=实体模型对象 value={Highlight,Billboard,TextLabel}
-local ESP_Cache = {}
--- 保存所有UI Toggle组件，用于一键关闭同步UI状态
-local UI_Toggles = {}
--- 保存事件连接，销毁时统一断开
-local EventConnections = {}
+
+local HitboxMod = {
+	Enabled = false,
+	Scale = 4,
+	LoopConn = nil,
+	Hitboxes = {},
+}
+
+local function HB_isZombie(obj)
+	if obj.ClassName ~= "Model" then return false end
+	if Players:GetPlayerFromCharacter(obj) then return false end
+	local ancestor = obj
+	for _ = 1, 3 do
+		ancestor = ancestor.Parent
+		if not ancestor then break end
+		if ancestor.Name == "AliveZombies" then return true end
+	end
+	return false
+end
+
+local function HB_createHitbox(model)
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 then return end
+	local root = model:FindFirstChild("HumanoidRootPart")
+		or model:FindFirstChild("UpperTorso")
+		or model:FindFirstChild("Torso")
+	if not root then return end
+
+	local hb = Instance.new("Part")
+	hb.Name = "_HitboxOverride"
+	hb.Size = Vector3.new(8, 10, 8) * HitboxMod.Scale
+	hb.Transparency = 1
+	hb.CanCollide = false
+	hb.CanTouch = false
+	hb.CanQuery = true
+	hb.Massless = true
+	hb.Anchored = true
+	hb.Locked = true
+	hb.CFrame = root.CFrame
+	hb.Parent = model
+
+	HitboxMod.Hitboxes[model] = hb
+end
+
+local function HB_removeHitbox(model)
+	local hb = HitboxMod.Hitboxes[model]
+	if hb and hb.Parent then
+		pcall(function() hb:Destroy() end)
+	end
+	HitboxMod.Hitboxes[model] = nil
+end
+
+local function HB_restoreAll()
+	for model in pairs(HitboxMod.Hitboxes) do
+		HB_removeHitbox(model)
+	end
+	HitboxMod.Hitboxes = {}
+end
+
+local function HB_start()
+	if HitboxMod.LoopConn then return end
+	HitboxMod.LoopConn = RunService.Heartbeat:Connect(function()
+		if not HitboxMod.Enabled then return end
+		local zf = workspace:FindFirstChild("AliveZombies")
+		if not zf then return end
+
+		local toRemove = {}
+		for model in pairs(HitboxMod.Hitboxes) do
+			local hum = model:FindFirstChildOfClass("Humanoid")
+			if not model.Parent or not hum or hum.Health <= 0 then
+				toRemove[#toRemove + 1] = model
+			end
+		end
+		for _, m in ipairs(toRemove) do HB_removeHitbox(m) end
+
+		for _, obj in ipairs(zf:GetChildren()) do
+			if HB_isZombie(obj) then
+				local hb = HitboxMod.Hitboxes[obj]
+				if not hb or not hb.Parent then
+					HB_createHitbox(obj)
+					hb = HitboxMod.Hitboxes[obj]
+				end
+				if hb then
+					local root = obj:FindFirstChild("HumanoidRootPart")
+						or obj:FindFirstChild("UpperTorso")
+						or obj:FindFirstChild("Torso")
+					if root then
+						hb.CFrame = root.CFrame
+						hb.Size = Vector3.new(8, 10, 8) * HitboxMod.Scale
+					end
+				end
+			end
+		end
+	end)
+end
+
+local function HB_stop()
+	if HitboxMod.LoopConn then
+		HitboxMod.LoopConn:Disconnect()
+		HitboxMod.LoopConn = nil
+	end
+	HB_restoreAll()
+end
+
+local function HB_SetEnabled(state)
+	HitboxMod.Enabled = state
+	if state then
+		HB_start()
+		WindUI:Notify({Title="Hitbox修改", Content="怪物超大判定盒已开启", Icon="check"})
+	else
+		HB_stop()
+		WindUI:Notify({Title="Hitbox修改", Content="怪物超大判定盒已关闭，全部生成的Hitbox已清除", Icon="x"})
+	end
+end
+
+local function HB_SetScale(val)
+	HitboxMod.Scale = val
+	for model,hb in pairs(HitboxMod.Hitboxes) do
+		if hb and hb.Parent then
+			local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("UpperTorso") or model:FindFirstChild("Torso")
+			if root then
+				hb.Size = Vector3.new(8,10,8)*val
+			end
+		end
+	end
+end
 
 local function SetWalkSpeed(speed)
     config.PlayerMod.WalkSpeed = speed
@@ -123,7 +218,6 @@ end
 local function getChar()
     return player.Character
 end
-
 local function getWeapon()
     local char = getChar()
     if not char then return nil end
@@ -138,7 +232,6 @@ local function getWeapon()
     end
     return nil
 end
-
 local function getNearestEnemy()
     local char = getChar()
     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -149,7 +242,7 @@ local function getNearestEnemy()
     if zombieFolder then
         for _, obj in ipairs(zombieFolder:GetChildren()) do
             if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-                local hum = obj:FindFirstChild("Humanoid")
+                local hum = obj:FindFirstChildOfClass("Humanoid")
                 if hum.Health > 0 then
                     local targetRoot = obj:FindFirstChild("HumanoidRootPart")
                     local dist = (targetRoot.Position - root.Position).Magnitude
@@ -178,7 +271,6 @@ local function getNearestEnemy()
     end
     return nearest
 end
-
 local function attack(enemy, weapon)
     local swing = weapon:FindFirstChild("Swing")
     if not swing then return end
@@ -194,7 +286,6 @@ local function attack(enemy, weapon)
         swing:FireServer(1)
     end)
 end
-
 local function StartKillAura()
     if killAuraRunning then return end
     killAuraRunning = true
@@ -219,7 +310,6 @@ local function StartKillAura()
         killAuraRunning = false
     end)
 end
-
 local function StopKillAura()
     killAuraRunning = false
     if killAuraLoopConn then
@@ -227,7 +317,6 @@ local function StopKillAura()
         killAuraLoopConn = nil
     end
 end
-
 local function stopBlocking()
     if blockLoop then
         blockLoop:Disconnect()
@@ -251,21 +340,13 @@ local function stopBlocking()
     blocking = false
     currentTool = nil
 end
-
 local function startBlockCycle(tool)
     if not config.Block.Enabled then return end
     if blocking then return end
     blocking = true
     currentTool = tool
-    local globalGunAnimations = ReplicatedStorage:FindFirstChild("GlobalGunAnimations")
-    if not globalGunAnimations then warn("❌找不到GlobalGunAnimations，格挡失效"); return end
-    local melee = globalGunAnimations:FindFirstChild("Melee")
-    if not melee then warn("❌找不到Melee，格挡失效"); return end
-    local sabreAnims = melee:FindFirstChild("Sabre")
-    if not sabreAnims then warn("❌找不到Sabre动画文件夹，格挡失效"); return end
-    local anim = sabreAnims:FindFirstChild("Block")
-    if not anim then warn("❌找不到Block动画，格挡失效"); return end
-
+    local sabreAnims = ReplicatedStorage:WaitForChild("GlobalGunAnimations"):WaitForChild("Melee"):WaitForChild("Sabre")
+    local anim = sabreAnims:WaitForChild("Block")
     blockTrack = animator:LoadAnimation(anim)
     blockTrack:Play()
     blockTrack.Looped = false
@@ -291,32 +372,27 @@ local function startBlockCycle(tool)
         end
     end)
 end
-
 local function onToolEquipped(tool)
     if tool.Name == "Sabre" and config.Block.Enabled then
         startBlockCycle(tool)
     end
 end
-
 local function onToolUnequipped()
     stopBlocking()
 end
-
-EventConnections.ChildAdded = character.ChildAdded:Connect(function(child)
+character.ChildAdded:Connect(function(child)
     if child:IsA("Tool") and child.Name == "Sabre" then
         onToolEquipped(child)
     end
 end)
-EventConnections.ChildRemoved = character.ChildRemoved:Connect(function(child)
+character.ChildRemoved:Connect(function(child)
     if child:IsA("Tool") and child.Name == "Sabre" then
         onToolUnequipped(child)
     end
 end)
-
 local function getLocalCharacter()
     return player.Character
 end
-
 local function getHealTool()
     local char = getLocalCharacter()
     if not char then return nil end
@@ -326,7 +402,6 @@ local function getHealTool()
     end
     return nil
 end
-
 local function getHealTargets()
     local targets = {}
     local myChar = getLocalCharacter()
@@ -344,7 +419,6 @@ local function getHealTargets()
     end
     return targets
 end
-
 local function healTarget(p)
     if not healTool then return end
     local targetChar = p.Character
@@ -369,7 +443,6 @@ local function healTarget(p)
         end
     end)
 end
-
 local function StartHeal()
     if healRunning then return end
     healRunning = true
@@ -387,7 +460,6 @@ local function StartHeal()
         healRunning = false
     end)
 end
-
 local function StopHeal()
     healRunning = false
     if healLoopConn then
@@ -395,12 +467,7 @@ local function StopHeal()
         healLoopConn = nil
     end
 end
-
-EventConnections.CharAdded = player.CharacterAdded:Connect(function(newChar)
-    -- 重生先断开旧角色工具事件
-    if EventConnections.ChildAdded then EventConnections.ChildAdded:Disconnect() end
-    if EventConnections.ChildRemoved then EventConnections.ChildRemoved:Disconnect() end
-
+player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoid = character:WaitForChild("Humanoid")
     animator = humanoid:WaitForChild("Animator")
@@ -409,22 +476,8 @@ EventConnections.CharAdded = player.CharacterAdded:Connect(function(newChar)
     else
         ResetPlayerProperties()
     end
-    ClearAllMobPlayerESP()
     stopBlocking()
     StopHeal()
-
-    -- 重新绑定新角色工具事件
-    EventConnections.ChildAdded = character.ChildAdded:Connect(function(child)
-        if child:IsA("Tool") and child.Name == "Sabre" then
-            onToolEquipped(child)
-        end
-    end)
-    EventConnections.ChildRemoved = character.ChildRemoved:Connect(function(child)
-        if child:IsA("Tool") and child.Name == "Sabre" then
-            onToolUnequipped(child)
-        end
-    end)
-
     task.wait(0.1)
     if config.Heal.Enabled then
         StartHeal()
@@ -434,7 +487,6 @@ EventConnections.CharAdded = player.CharacterAdded:Connect(function(newChar)
         startBlockCycle(tool)
     end
 end)
-
 do
     local currentTool = character:FindFirstChildOfClass("Tool")
     if currentTool and currentTool.Name == "Sabre" and config.Block.Enabled then
@@ -444,7 +496,6 @@ end
 if config.Heal.Enabled then
     StartHeal()
 end
-
 local function ClearKeySpotESP()
     for _, v in ipairs(game:GetDescendants()) do
         if v.Name == "KeySpotESP_UI" or v.Name == "KeySpotESP_HL" then
@@ -452,13 +503,9 @@ local function ClearKeySpotESP()
         end
     end
 end
-
 local function LoadKeySpotESP()
     ClearKeySpotESP()
-    local garden = workspace:FindFirstChild("Garden Of Dishonor")
-    if not garden then warn("❌找不到Garden Of Dishonor，钥匙ESP失效") return end
-    local KEYSPOTS_ROOT = garden:FindFirstChild("KeySpots")
-    if not KEYSPOTS_ROOT then warn("❌找不到KeySpots，钥匙ESP失效") return end
+    local KEYSPOTS_ROOT = workspace["Garden Of Dishonor"].KeySpots
     local count = 0
     local function makeESP(part, label)
         if not part or not part:IsA("BasePart") then return end
@@ -506,7 +553,6 @@ local function LoadKeySpotESP()
     scan(KEYSPOTS_ROOT)
     print("[KeySpots ESP] 完成，共标记", count, "个点")
 end
-
 local function ToggleKeySpotESP(state)
     config.KeySpotESP.Enabled = state
     if state then
@@ -517,7 +563,6 @@ local function ToggleKeySpotESP(state)
         WindUI:Notify({Title="钥匙透视", Content="已关闭", Icon="x"})
     end
 end
-
 local function ClearLadderESP()
     for _, v in ipairs(game:GetDescendants()) do
         if v.Name == "LadderESP_HL" then
@@ -525,15 +570,9 @@ local function ClearLadderESP()
         end
     end
 end
-
 local function LoadLadderESP()
     ClearLadderESP()
-    local kyraht = workspace:FindFirstChild("Kyraht")
-    if not kyraht then warn("❌找不到Kyraht，梯子ESP失效") return end
-    local beginArea = kyraht:FindFirstChild("BeginningArea")
-    if not beginArea then warn("❌找不到BeginningArea，梯子ESP失效") return end
-    local ROOT = beginArea:FindFirstChild("LadderSpawns")
-    if not ROOT then warn("❌找不到LadderSpawns，梯子ESP失效") return end
+    local ROOT = workspace.Kyraht.BeginningArea.LadderSpawns
     local count = 0
     local function makeESP(model)
         if not model or not model:IsA("Model") then return end
@@ -559,7 +598,6 @@ local function LoadLadderESP()
     scan(ROOT)
     print("[Ladder ESP] 完成，共标记", count, "个")
 end
-
 local function ToggleLadderESP(state)
     config.LadderESP.Enabled = state
     if state then
@@ -571,211 +609,42 @@ local function ToggleLadderESP(state)
     end
 end
 
---=====================【重构高性能ESP缓存系统】=====================
-local function DestroyESPCacheEntry(entityModel)
-    local entry = ESP_Cache[entityModel]
-    if not entry then return end
-    if entry.Highlight then entry.Highlight:Destroy() end
-    if entry.Billboard then entry.Billboard:Destroy() end
-    ESP_Cache[entityModel] = nil
+local FMH_Players = game:GetService("Players")
+local FMH_LocalPlayer = FMH_Players.LocalPlayer
+local FMH_RunService = game:GetService("RunService")
+local FMH_UserInputService = game:GetService("UserInputService")
+local FMH_Lighting = game:GetService("Lighting")
+
+local function GetHealTool()
+	local char = FMH_LocalPlayer.Character
+	if not char then return nil end
+	local tool = char:FindFirstChildOfClass("Tool")
+	if tool and tool:FindFirstChild("HealPlayer") and tool:FindFirstChild("AddTags") then return tool end
+	return nil
 end
 
-local function ClearAllMobPlayerESP()
-    for model in pairs(ESP_Cache) do
-        DestroyESPCacheEntry(model)
-    end
-    table.clear(ESP_Cache)
-    for _, v in ipairs(game:GetDescendants()) do
-        if v.Name == "ESP_Player_HL" or v.Name == "ESP_Player_BB" or v.Name == "ESP_Zombie_HL" or v.Name == "ESP_Zombie_BB" then
-            v:Destroy()
-        end
-    end
+local function GetHealToolFromBackpack()
+	local backpack = FMH_LocalPlayer:FindFirstChild("Backpack")
+	if not backpack then return nil end
+	for _, t in ipairs(backpack:GetChildren()) do
+		if t:IsA("Tool") and t:FindFirstChild("HealPlayer") and t:FindFirstChild("AddTags") then return t end
+	end
+	return nil
 end
 
-local function GetOrCreateESP(entityModel, rootPart, fillColor, outlineColor, textContent)
-    if not entityModel or not rootPart or not rootPart:IsDescendantOf(game) then return nil end
-    local entry = ESP_Cache[entityModel]
-    if not entry then
-        local hl = Instance.new("Highlight")
-        hl.Adornee = rootPart
-        hl.FillColor = fillColor
-        hl.OutlineColor = outlineColor
-        hl.FillTransparency = 0.75
-        hl.OutlineTransparency = 0.15
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.Parent = rootPart
-
-        local bb = Instance.new("BillboardGui")
-        bb.Adornee = rootPart
-        bb.Size = UDim2.new(0, 220, 0, 60)
-        bb.StudsOffset = Vector3.new(0, 3.5, 0)
-        bb.AlwaysOnTop = true
-        bb.LightInfluence = 0
-        bb.Parent = rootPart
-
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1,0,1,0)
-        label.BackgroundTransparency = 1
-        label.Text = textContent
-        label.TextScaled = true
-        label.Font = Enum.Font.SourceSansBold
-        label.TextColor3 = Color3.new(1,1,1)
-        label.TextStrokeTransparency = 0
-        label.TextStrokeColor3 = Color3.new(0,0,0)
-        label.Parent = bb
-
-        entry = {
-            Highlight = hl,
-            Billboard = bb,
-            TextLabel = label
-        }
-        ESP_Cache[entityModel] = entry
-    end
-    -- 复用实例，只更新内容，不销毁重建
-    entry.TextLabel.Text = textContent
-    entry.Highlight.FillColor = fillColor
-    entry.Highlight.OutlineColor = outlineColor
-    return entry
-end
-
-local function RefreshPlayerESP()
-    if not config.PlayerESP.Enabled then return end
-    local myRoot = character and character:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return end
-    local processed = {}
-    for _, targetPlayer in ipairs(Players:GetPlayers()) do
-        if targetPlayer ~= player then
-            local tarChar = targetPlayer.Character
-            if not tarChar then continue end
-            local tarHum = tarChar:FindFirstChildOfClass("Humanoid")
-            local tarRoot = tarChar:FindFirstChild("HumanoidRootPart")
-            if not tarHum or not tarRoot or tarHum.Health <= 0 then
-                if ESP_Cache[tarChar] then DestroyESPCacheEntry(tarChar) end
-                continue
-            end
-            local dist = math.floor((tarRoot.Position - myRoot.Position).Magnitude)
-            if dist > config.PlayerESP.MaxDistance then
-                if ESP_Cache[tarChar] then DestroyESPCacheEntry(tarChar) end
-                continue
-            end
-            processed[tarChar] = true
-            local fillCol = Color3.fromRGB(0,180,255)
-            local outCol = Color3.new(0,0,0)
-            local displayText = ""
-            if config.PlayerESP.ShowName then displayText = displayText .. targetPlayer.Name.."\n" end
-            if config.PlayerESP.ShowHealth then displayText = displayText .. "HP:"..math.floor(tarHum.Health).."/"..tarHum.MaxHealth.."\n" end
-            if config.PlayerESP.ShowDistance then displayText = displayText .. "距离:"..dist.." studs" end
-
-            local entry = GetOrCreateESP(tarChar, tarRoot, fillCol, outCol, displayText)
-            if not entry then continue end
-            entry.Highlight.Visible = config.PlayerESP.ShowBox
-            entry.Billboard.Visible = config.PlayerESP.ShowName or config.PlayerESP.ShowHealth or config.PlayerESP.ShowDistance
-        end
-    end
-    -- 清理本轮没有处理的旧实体缓存（离开/死亡玩家）
-    for model in pairs(ESP_Cache) do
-        if not model:IsDescendantOf(game) or not processed[model] then
-            DestroyESPCacheEntry(model)
-        end
-    end
-end
-
-local function RefreshZombieESP()
-    if not config.ZombieESP.Enabled then return end
-    local myRoot = character and character:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return end
-    local processed = {}
-    local scanPool = {}
-    local zombieFolder = workspace:FindFirstChild("AliveZombies")
-    if zombieFolder then
-        for _,m in ipairs(zombieFolder:GetChildren()) do
-            if m:IsA("Model") then table.insert(scanPool,m) end
-        end
-    end
-    for _,m in ipairs(workspace:GetDescendants()) do
-        if m:IsA("Model") and m:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(m) then
-            table.insert(scanPool,m)
-        end
-    end
-    for _,mobModel in ipairs(scanPool) do
-        local hum = mobModel:FindFirstChildOfClass("Humanoid")
-        local root = mobModel:FindFirstChild("HumanoidRootPart")
-        if not hum or not root then
-            if ESP_Cache[mobModel] then DestroyESPCacheEntry(mobModel) end
-            continue
-        end
-        if hum.Health <= 0 then
-            if ESP_Cache[mobModel] then DestroyESPCacheEntry(mobModel) end
-            continue
-        end
-        local dist = math.floor((root.Position - myRoot.Position).Magnitude)
-        if dist > config.ZombieESP.MaxDistance then
-            if ESP_Cache[mobModel] then DestroyESPCacheEntry(mobModel) end
-            continue
-        end
-        processed[mobModel] = true
-        local fillCol = Color3.fromRGB(255,40,40)
-        local outCol = Color3.new(0,0,0)
-        local displayText = ""
-        if config.ZombieESP.ShowName then displayText = displayText .. mobModel.Name.."\n" end
-        if config.ZombieESP.ShowHealth then displayText = displayText .. "HP:"..math.floor(hum.Health).."/"..hum.MaxHealth.."\n" end
-        if config.ZombieESP.ShowDistance then displayText = displayText .. "距离:"..dist.." studs" end
-
-        local entry = GetOrCreateESP(mobModel, root, fillCol, outCol, displayText)
-        if not entry then continue end
-        entry.Highlight.Visible = config.ZombieESP.ShowBox
-        entry.Billboard.Visible = config.ZombieESP.ShowName or config.ZombieESP.ShowHealth or config.ZombieESP.ShowDistance
-    end
-    -- 清理死亡/离开地图怪物缓存
-    for model in pairs(ESP_Cache) do
-        if not model:IsDescendantOf(game) or not processed[model] then
-            DestroyESPCacheEntry(model)
-        end
-    end
-end
-
-local function StartESPGlobalLoop()
-    if ESPRefreshLoop then task.cancel(ESPRefreshLoop) end
-    ESPRefreshLoop = task.spawn(function()
-        while task.wait(config.ESPGlobal.RefreshRate) do
-            RefreshPlayerESP()
-            RefreshZombieESP()
-            if not config.PlayerESP.Enabled and not config.ZombieESP.Enabled then
-                ClearAllMobPlayerESP()
-                break
-            end
-        end
-    end)
-end
-
-local function StopESPGlobalLoop()
-    if ESPRefreshLoop then
-        task.cancel(ESPRefreshLoop)
-        ESPRefreshLoop = nil
-    end
-    ClearAllMobPlayerESP()
-end
-
-local function TogglePlayerESP(state)
-    config.PlayerESP.Enabled = state
-    if state then
-        StartESPGlobalLoop()
-        WindUI:Notify({Title="玩家ESP", Content="已开启", Icon="check"})
-    else
-        if not config.ZombieESP.Enabled then StopESPGlobalLoop() end
-        WindUI:Notify({Title="玩家ESP", Content="已关闭", Icon="x"})
-    end
-end
-
-local function ToggleZombieESP(state)
-    config.ZombieESP.Enabled = state
-    if state then
-        StartESPGlobalLoop()
-        WindUI:Notify({Title="僵尸ESP", Content="已开启", Icon="check"})
-    else
-        if not config.PlayerESP.Enabled then StopESPGlobalLoop() end
-        WindUI:Notify({Title="僵尸ESP", Content="已关闭", Icon="x"})
-    end
+local function EquipHealTool()
+	local tool = GetHealTool()
+	if tool then return tool end
+	local bpTool = GetHealToolFromBackpack()
+	if bpTool then
+		local char = FMH_LocalPlayer.Character
+		if char and char:FindFirstChildOfClass("Humanoid") then
+			pcall(function() char.Humanoid:EquipTool(bpTool) end)
+			task.wait(0.1)
+			return GetHealTool()
+		end
+	end
+	return nil
 end
 
 _G.OE_Script = {
@@ -783,6 +652,13 @@ _G.OE_Script = {
         Enable = function() config.KillAura.Enabled = true; StartKillAura() end,
         Disable = function() config.KillAura.Enabled = false; StopKillAura() end,
         Toggle = function() config.KillAura.Enabled = not config.KillAura.Enabled; if config.KillAura.Enabled then StartKillAura() else StopKillAura() end end,
+    },
+    HitboxMod = {
+        Enable = function() HB_SetEnabled(true) end,
+        Disable = function() HB_SetEnabled(false) end,
+        Toggle = function() HB_SetEnabled(not HitboxMod.Enabled) end,
+        SetScale = function(val) HB_SetScale(val) end,
+        ClearAll = function() HB_restoreAll() end
     },
     Block = {
         Enable = function() config.Block.Enabled = true; local tool = character:FindFirstChildOfClass("Tool"); if tool and tool.Name == "Sabre" then startBlockCycle(tool) end end,
@@ -806,11 +682,10 @@ _G.OE_Script = {
         Reset = function() ResetPlayerProperties() end,
         ToggleCustom = function() ToggleCustomWalkSpeed(not config.PlayerMod.Enabled) end
     },
-    PlayerESP = {
-        Toggle = function() TogglePlayerESP(not config.PlayerESP.Enabled) end
-    },
-    ZombieESP = {
-        Toggle = function() ToggleZombieESP(not config.ZombieESP.Enabled) end
+    HealToolUtil = {
+        GetHealTool = function() return GetHealTool() end,
+        GetHealToolFromBackpack = function() return GetHealToolFromBackpack() end,
+        EquipHealTool = function() return EquipHealTool() end
     }
 }
 
@@ -834,10 +709,12 @@ local Window = WindUI:CreateWindow({
     }
 })
 local ConfigManager = Window.ConfigManager
-
-local KillAuraTab = Window:Tab({Title = "杀戮光环",Icon = "sword"})
+local KillAuraTab = Window:Tab({
+    Title = "杀戮光环",
+    Icon = "sword"
+})
 local KA_Main = KillAuraTab:Section({Title = "基础设置"})
-UI_Toggles.ka_enabled = KA_Main:Toggle({
+KA_Main:Toggle({
     Flag = "ka_enabled",
     Title = "启用杀戮光环",
     Default = config.KillAura.Enabled,
@@ -852,7 +729,7 @@ UI_Toggles.ka_enabled = KA_Main:Toggle({
         end
     end
 })
-UI_Toggles.ka_autorotate = KA_Main:Toggle({
+KA_Main:Toggle({
     Flag = "ka_autorotate",
     Title = "自动转向敌人",
     Default = config.KillAura.AutoRotate,
@@ -878,15 +755,41 @@ KA_Main:Slider({
         config.KillAura.Interval = val
     end
 })
+
+local KA_HitboxSection = KillAuraTab:Section({Title = "怪物Hitbox判定修改"})
+KA_HitboxSection:Toggle({
+    Flag = "hitbox_mod_enable",
+    Title = "启用怪物超大判定盒",
+    Default = HitboxMod.Enabled,
+    Callback = function(state)
+        HB_SetEnabled(state)
+    end
+})
+KA_HitboxSection:Slider({
+    Flag = "hitbox_scale",
+    Title = "Hitbox缩放倍率",
+    Step = 0.25,
+    Value = {Min=1,Max=10,Default=HitboxMod.Scale},
+    Callback = function(val)
+        HB_SetScale(val)
+    end
+})
+KA_HitboxSection:Paragraph({
+    Title = "提示",
+    Desc = "仅对AliveZombies文件夹内僵尸生效；生成透明不可见Query部件，增大武器命中判定；关闭自动清理全部生成部件。"
+})
+
 local KA_Info = KillAuraTab:Section({Title = "说明信息"})
 KA_Info:Paragraph({
     Title = "使用说明",
     Desc = "优先扫描存活僵尸文件夹；若无，则遍历全地图非玩家实体。武器必须带有挥动远程事件，支持自动从背包装备。"
 })
-
-local BlockTab = Window:Tab({Title = "自动格挡",Icon = "shield"})
+local BlockTab = Window:Tab({
+    Title = "自动格挡",
+    Icon = "shield"
+})
 local BL_Main = BlockTab:Section({Title = "格挡设置"})
-UI_Toggles.block_enabled = BL_Main:Toggle({
+BL_Main:Toggle({
     Flag = "block_enabled",
     Title = "启用自动格挡",
     Default = config.Block.Enabled,
@@ -923,10 +826,12 @@ BL_Info:Paragraph({
     Title = "使用说明",
     Desc = "装备强盗武器自动循环格挡；卸下武器立刻停止；重生角色自动恢复格挡逻辑。"
 })
-
-local HealTab = Window:Tab({Title = "全图治疗",Icon = "heart"})
+local HealTab = Window:Tab({
+    Title = "全图治疗",
+    Icon = "heart"
+})
 local HL_Main = HealTab:Section({Title = "治疗设置"})
-UI_Toggles.heal_enabled = HL_Main:Toggle({
+HL_Main:Toggle({
     Flag = "heal_enabled",
     Title = "启用全图治疗",
     Default = config.Heal.Enabled,
@@ -973,10 +878,13 @@ HL_Info:Paragraph({
     Title = "使用说明",
     Desc = "必须持有带有治疗玩家、AddTags远程事件的治疗工具；只会治疗血量低于阈值的其他玩家。"
 })
-
-local PlayerTab = Window:Tab({Title = "人物功能",Icon = "person"})
+local PlayerTab = Window:Tab({
+    Title = "人物功能",
+    Icon = "person"
+})
 local PL_Main = PlayerTab:Section({Title = "角色属性修改"})
-UI_Toggles.player_walkspeed_enable = PL_Main:Toggle({
+
+PL_Main:Toggle({
     Flag = "player_walkspeed_enable",
     Title = "启用自定义移动速度",
     Default = config.PlayerMod.Enabled,
@@ -984,6 +892,7 @@ UI_Toggles.player_walkspeed_enable = PL_Main:Toggle({
         ToggleCustomWalkSpeed(state)
     end
 })
+
 PL_Main:Slider({
     Flag = "player_walkspeed",
     Title = "移动速度",
@@ -993,6 +902,7 @@ PL_Main:Slider({
         SetWalkSpeed(val)
     end
 })
+
 PL_Main:Button({
     Title = "恢复原始速度",
     Icon = "undo",
@@ -1001,15 +911,89 @@ PL_Main:Button({
         WindUI:Notify({Title="人物功能", Content="已恢复原始移动速度", Icon="check"})
     end
 })
+
+local PL_HealLeft = PlayerTab:Section({Title = "全图治疗"})
+local PL_HealRight = PlayerTab:Section({Title = "自我治疗"})
+
+PL_HealLeft:Toggle({
+    Flag = "FullMapHealToggle",
+    Text = "全图治疗",
+    Default = false,
+    Callback = function(Value) FullMapHeal.Enabled = Value; if Value then FMH_start() end end
+})
+PL_HealLeft:Slider({
+    Flag = "FullMapHealThreshold",
+    Text = "治疗血量阈值",
+    Default = 100,
+    Min = 10,
+    Max = 150,
+    Rounding = 0,
+    Callback = function(Value) FullMapHeal.HealThreshold = Value end
+})
+PL_HealLeft:Toggle({
+    Flag = "FullMapHealAutoEquip",
+    Text = "自动装备治疗工具",
+    Default = false,
+    Callback = function(Value) FullMapHeal.AutoEquip = Value end
+})
+PL_HealLeft:Dropdown({
+    Flag = "HealWhitelist",
+    SpecialType = "Player",
+    Multi = true,
+    ExcludeLocalPlayer = true,
+    Text = "治疗白名单（空=全部）",
+    Tooltip = "选择要治疗的玩家。都不选则治疗所有人",
+    Callback = function(Value)
+        FullMapHeal.Whitelist = Value or {}
+        local count = 0
+        for _ in pairs(FullMapHeal.Whitelist) do count = count + 1 end
+        FullMapHeal.WhitelistEmpty = (count == 0)
+    end,
+})
+
+PL_HealRight:Toggle({
+    Flag = "SelfHealToggle",
+    Text = "自我治疗",
+    Default = false,
+    Callback = function(Value) SelfHeal.Enabled = Value; if Value then SH_start() else SH_stop() end end
+})
+PL_HealRight:Slider({
+    Flag = "SelfHealThreshold",
+    Text = "开始治疗血量",
+    Default = 99,
+    Min = 1,
+    Max = 150,
+    Rounding = 0,
+    Callback = function(Value) SelfHeal.HealThreshold = Value end
+})
+PL_HealRight:Slider({
+    Flag = "SelfHealStopThreshold",
+    Text = "停止治疗血量",
+    Default = 100,
+    Min = 10,
+    Max = 200,
+    Rounding = 0,
+    Callback = function(Value) SelfHeal.StopThreshold = Value end
+})
+PL_HealRight:Toggle({
+    Flag = "SelfHealAutoEquip",
+    Text = "自动装备治疗工具",
+    Default = false,
+    Callback = function(Value) SelfHeal.AutoEquip = Value end
+})
+
 local PL_Info = PlayerTab:Section({Title = "说明信息"})
 PL_Info:Paragraph({
     Title = "使用说明",
     Desc = "必须开启【启用自定义移动速度】滑块才会生效；关闭开关自动恢复游戏原始16速度；脚本销毁 / 全部关闭自动复原；角色重生自动继承开关状态。"
 })
 
-local ESPTab = Window:Tab({Title = "透视ESP",Icon = "eye"})
+local ESPTab = Window:Tab({
+    Title = "透视ESP",
+    Icon = "eye"
+})
 local ESP_Main = ESPTab:Section({Title = "地图点位透视"})
-UI_Toggles.keyspot_esp = ESP_Main:Toggle({
+ESP_Main:Toggle({
     Flag = "keyspot_esp",
     Title = "钥匙透视",
     Default = config.KeySpotESP.Enabled,
@@ -1017,7 +1001,7 @@ UI_Toggles.keyspot_esp = ESP_Main:Toggle({
         ToggleKeySpotESP(state)
     end
 })
-UI_Toggles.ladder_esp = ESP_Main:Toggle({
+ESP_Main:Toggle({
     Flag = "ladder_esp",
     Title = "梯子透视",
     Default = config.LadderESP.Enabled,
@@ -1025,137 +1009,47 @@ UI_Toggles.ladder_esp = ESP_Main:Toggle({
         ToggleLadderESP(state)
     end
 })
-
-local ESP_PlayerSection = ESPTab:Section({Title = "玩家ESP"})
-UI_Toggles.player_esp_enable = ESP_PlayerSection:Toggle({
-    Flag = "player_esp_enable",
-    Title = "启用玩家ESP",
-    Default = config.PlayerESP.Enabled,
-    Callback = function(state)
-        TogglePlayerESP(state)
-    end
-})
-UI_Toggles.player_esp_box = ESP_PlayerSection:Toggle({
-    Flag = "player_esp_box",
-    Title = "显示方框高亮",
-    Default = config.PlayerESP.ShowBox,
-    Callback = function(state)
-        config.PlayerESP.ShowBox = state
-    end
-})
-UI_Toggles.player_esp_name = ESP_PlayerSection:Toggle({
-    Flag = "player_esp_name",
-    Title = "显示玩家名字",
-    Default = config.PlayerESP.ShowName,
-    Callback = function(state)
-        config.PlayerESP.ShowName = state
-    end
-})
-UI_Toggles.player_esp_hp = ESP_PlayerSection:Toggle({
-    Flag = "player_esp_hp",
-    Title = "显示血量",
-    Default = config.PlayerESP.ShowHealth,
-    Callback = function(state)
-        config.PlayerESP.ShowHealth = state
-    end
-})
-UI_Toggles.player_esp_dist = ESP_PlayerSection:Toggle({
-    Flag = "player_esp_dist",
-    Title = "显示距离",
-    Default = config.PlayerESP.ShowDistance,
-    Callback = function(state)
-        config.PlayerESP.ShowDistance = state
-    end
-})
-
-local ESP_ZombieSection = ESPTab:Section({Title = "僵尸/怪物ESP"})
-UI_Toggles.zombie_esp_enable = ESP_ZombieSection:Toggle({
-    Flag = "zombie_esp_enable",
-    Title = "启用僵尸ESP",
-    Default = config.ZombieESP.Enabled,
-    Callback = function(state)
-        ToggleZombieESP(state)
-    end
-})
-UI_Toggles.zombie_esp_box = ESP_ZombieSection:Toggle({
-    Flag = "zombie_esp_box",
-    Title = "显示方框高亮",
-    Default = config.ZombieESP.ShowBox,
-    Callback = function(state)
-        config.ZombieESP.ShowBox = state
-    end
-})
-UI_Toggles.zombie_esp_name = ESP_ZombieSection:Toggle({
-    Flag = "zombie_esp_name",
-    Title = "显示怪物名称",
-    Default = config.ZombieESP.ShowName,
-    Callback = function(state)
-        config.ZombieESP.ShowName = state
-    end
-})
-UI_Toggles.zombie_esp_hp = ESP_ZombieSection:Toggle({
-    Flag = "zombie_esp_hp",
-    Title = "显示血量",
-    Default = config.ZombieESP.ShowHealth,
-    Callback = function(state)
-        config.ZombieESP.ShowHealth = state
-    end
-})
-UI_Toggles.zombie_esp_dist = ESP_ZombieSection:Toggle({
-    Flag = "zombie_esp_dist",
-    Title = "显示距离",
-    Default = config.ZombieESP.ShowDistance,
-    Callback = function(state)
-        config.ZombieESP.ShowDistance = state
-    end
-})
-
 local ESP_Info = ESPTab:Section({Title = "说明信息"})
 ESP_Info:Paragraph({
     Title = "使用说明",
-    Desc = "钥匙：高亮耻辱花园内点位；梯子：填充高亮基拉特过桥后梯子模型；玩家ESP标记其他玩家；僵尸ESP标记存活怪物；ESP采用实例缓存复用，刷新间隔0.6s，支持最大渲染距离。"
+    Desc = "钥匙：高亮耻辱花园内点位；梯子：填充高亮基拉特过桥后梯子模型，无描边方框。"
 })
-
-local GlobalTab = Window:Tab({Title = "全局工具",Icon = "settings"})
+local GlobalTab = Window:Tab({
+    Title = "全局工具",
+    Icon = "settings"
+})
 local GL_Main = GlobalTab:Section({Title = "一键操作"})
-
 GL_Main:Button({
     Title = "一键关闭所有功能",
     Icon = "power-off",
     Callback = function()
+        HitboxMod.Enabled = false
+        HB_stop()
+
         config.KillAura.Enabled = false
         config.Block.Enabled = false
         config.Heal.Enabled = false
         config.KeySpotESP.Enabled = false
         config.LadderESP.Enabled = false
-        config.PlayerESP.Enabled = false
-        config.ZombieESP.Enabled = false
         config.PlayerMod.Enabled = false
+        ToggleCustomWalkSpeed(false)
 
         StopKillAura()
         stopBlocking()
         StopHeal()
         ClearKeySpotESP()
         ClearLadderESP()
-        StopESPGlobalLoop()
-        ClearAllMobPlayerESP()
-        ToggleCustomWalkSpeed(false)
-
-        -- 核心修复：循环设置所有UI Toggle组件视觉状态为关闭，解决UI按钮勾选不消失
-        for _, toggleComp in pairs(UI_Toggles) do
-            if toggleComp and toggleComp.Set then
-                toggleComp:Set(false)
-            end
-        end
-
+        ResetPlayerProperties()
         WindUI:Notify({Title="全局", Content="全部功能已关闭，人物属性已复原", Icon="check"})
     end
 })
-
 GL_Main:Button({
     Title = "销毁UI面板（全部功能失效）",
     Icon = "shredder",
     Callback = function()
+        HitboxMod.Enabled = false
+        HB_stop()
+
         config.PlayerMod.Enabled = false
         ToggleCustomWalkSpeed(false)
 
@@ -1164,25 +1058,18 @@ GL_Main:Button({
         StopHeal()
         ClearKeySpotESP()
         ClearLadderESP()
-        StopESPGlobalLoop()
-        ClearAllMobPlayerESP()
         ResetPlayerProperties()
-
-        -- 全部事件连接断开，彻底释放
-        for _,conn in pairs(EventConnections) do
-            if conn then conn:Disconnect() end
-        end
-        table.clear(EventConnections)
-
         Window:Destroy()
     end
 })
-
 local GL_Config = GlobalTab:Section({Title = "配置管理"})
 GL_Config:Button({
     Title = "保存当前配置",
     Icon = "save",
     Callback = function()
+        config.HitboxMod.Enabled = HitboxMod.Enabled
+        config.HitboxMod.Scale = HitboxMod.Scale
+
         local cfg = ConfigManager:CreateConfig("main")
         if cfg:Save() then
             WindUI:Notify({Title="配置", Content="配置保存成功", Icon="check"})
@@ -1200,13 +1087,12 @@ GL_Config:Button({
             else
                 ToggleCustomWalkSpeed(false)
             end
-            -- 加载配置后，正确启动ESP循环
-            if config.PlayerESP.Enabled then TogglePlayerESP(true) end
-            if config.ZombieESP.Enabled then ToggleZombieESP(true) end
+            HitboxMod.Scale = config.HitboxMod.Scale
+            HB_SetEnabled(config.HitboxMod.Enabled)
+
             WindUI:Notify({Title="配置", Content="配置加载成功", Icon="check"})
         end
     end
 })
-
 print("✅ 我们的处决脚本加载完成！")
 print("🌐 全局API：_G.OE_Script")
