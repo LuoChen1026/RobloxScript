@@ -14,13 +14,13 @@ getgenv().DRB_WINDUI_ACTIVE = true
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-	Title = "星火脚本",
-	Author = "星火 • 群582669853",
+	Title = "我们的处决",
+	Author = "Made by星火 • 群582669853",
 	Folder = "Xinghuo_hub",
 	NewElements = true,
 	HideSearchBar = false,
 	OpenButton = {
-		Title = "打开 星火脚本",
+		Title = "Our execution,
 		CornerRadius = UDim.new(1, 0),
 		StrokeThickness = 3,
 		Enabled = true,
