@@ -1,4 +1,8 @@
 local Arqel = loadstring(game:HttpGet("https://raw.githubusercontent.com/Cobruhehe/expert-octo-doodle/refs/heads/main/ArqelUi.luau"))()
+local KEYS = {
+    ["XHNB"] = "basic",
+    ["XHNB666"] = "premium"
+}
 Arqel.Appearance = {
     Title = "星火",
     Subtitle = "输入您的卡密以继续使用",
@@ -52,11 +56,20 @@ Arqel.Changelog = {
     {Version = "v1.0.0", Date = "2025年1月10日", Changes = {"首次发布"}}
 }
 Arqel.Callbacks.OnVerify = function(key)
-    return key == "XHNB"
+    local tier = KEYS[key]
+    if tier then
+        getgenv().USER_TIER = tier
+        return true
+    end
+    return false
 end
 Arqel.Callbacks.OnSuccess = function()
     Arqel:Notify("成功", "验证通过!", 2, "success")
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/OE_Xinghuo.lua"))()
+    if getgenv().USER_TIER == "premium" then
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E6%88%91%E4%BB%AC%E7%9A%84%E5%A4%84%E5%86%B3%E9%AB%98%E7%BA%A7%E7%89%88.lua"))()
+    else
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E6%88%91%E4%BB%AC%E7%9A%84%E5%A4%84%E5%86%B3%E5%9F%BA%E7%A1%80%E7%89%88.lua"))()
+    end
 end
 Arqel.Callbacks.OnFail = function(errorMsg)
     Arqel:Notify("错误", errorMsg, 4, "error")
