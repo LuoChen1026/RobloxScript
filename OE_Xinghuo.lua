@@ -42,7 +42,22 @@ local config = {
         Enabled = false
     },
     PlayerMod = {
+        Enabled = false,
         WalkSpeed = 16
+    },
+    PlayerESP = {
+        Enabled = false,
+        ShowBox = true,
+        ShowName = true,
+        ShowHealth = true,
+        ShowDistance = true
+    },
+    ZombieESP = {
+        Enabled = false,
+        ShowBox = true,
+        ShowName = true,
+        ShowHealth = true,
+        ShowDistance = true
     }
 }
 local killAuraRunning = false
@@ -55,15 +70,35 @@ local currentTool = nil
 local healRunning = false
 local healLoopConn = nil
 local healTool = nil
+local ESPRefreshLoop = nil
+local ESP_Container = {}
+
 local function SetWalkSpeed(speed)
     config.PlayerMod.WalkSpeed = speed
     if humanoid and humanoid:IsDescendantOf(game) then
-        humanoid.WalkSpeed = speed
+        if config.PlayerMod.Enabled then
+            humanoid.WalkSpeed = speed
+        else
+            humanoid.WalkSpeed = ORIGINAL_WALKSPEED
+        end
     end
 end
+
 local function ResetPlayerProperties()
     SetWalkSpeed(ORIGINAL_WALKSPEED)
 end
+
+local function ToggleCustomWalkSpeed(state)
+    config.PlayerMod.Enabled = state
+    if state then
+        SetWalkSpeed(config.PlayerMod.WalkSpeed)
+        WindUI:Notify({Title="人物功能", Content="自定义移动速度已开启", Icon="check"})
+    else
+        ResetPlayerProperties()
+        WindUI:Notify({Title="人物功能", Content="自定义移动速度已关闭，恢复原始速度", Icon="x"})
+    end
+end
+
 local function getChar()
     return player.Character
 end
@@ -180,7 +215,11 @@ local function stopBlocking()
         blockMarker = nil
     end
     if humanoid and humanoid:IsDescendantOf(game) then
-        humanoid.WalkSpeed = config.PlayerMod.WalkSpeed
+        if config.PlayerMod.Enabled then
+            humanoid.WalkSpeed = config.PlayerMod.WalkSpeed
+        else
+            humanoid.WalkSpeed = ORIGINAL_WALKSPEED
+        end
     end
     blocking = false
     currentTool = nil
@@ -316,7 +355,12 @@ player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoid = character:WaitForChild("Humanoid")
     animator = humanoid:WaitForChild("Animator")
-    SetWalkSpeed(config.PlayerMod.WalkSpeed)
+    if config.PlayerMod.Enabled then
+        SetWalkSpeed(config.PlayerMod.WalkSpeed)
+    else
+        ResetPlayerProperties()
+    end
+    ClearAllMobPlayerESP()
     stopBlocking()
     StopHeal()
     task.wait(0.1)
@@ -449,6 +493,169 @@ local function ToggleLadderESP(state)
         WindUI:Notify({Title="梯子透视", Content="已关闭", Icon="x"})
     end
 end
+
+local function ClearAllMobPlayerESP()
+    for _, obj in ipairs(ESP_Container) do
+        if obj and obj:IsDescendantOf(game) then
+            obj:Destroy()
+        end
+    end
+    table.clear(ESP_Container)
+    for _, v in ipairs(game:GetDescendants()) do
+        if v.Name == "ESP_Player_HL" or v.Name == "ESP_Player_BB" or v.Name == "ESP_Zombie_HL" or v.Name == "ESP_Zombie_BB" then
+            v:Destroy()
+        end
+    end
+end
+
+local function CreateBillboardESP(adornee, textStr, tagName)
+    if not adornee then return nil end
+    local bb = Instance.new("BillboardGui")
+    bb.Name = tagName or "ESP_Player_BB"
+    bb.Adornee = adornee
+    bb.Size = UDim2.new(0, 220, 0, 60)
+    bb.StudsOffset = Vector3.new(0, 3.5, 0)
+    bb.AlwaysOnTop = true
+    bb.LightInfluence = 0
+    bb.Parent = adornee
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1,0,1,0)
+    label.BackgroundTransparency = 1
+    label.Text = textStr
+    label.TextScaled = true
+    label.Font = Enum.Font.SourceSansBold
+    label.TextColor3 = Color3.new(1,1,1)
+    label.TextStrokeTransparency = 0
+    label.TextStrokeColor3 = Color3.new(0,0,0)
+    label.Parent = bb
+    table.insert(ESP_Container, bb)
+    return bb
+end
+
+local function CreateHighlightESP(adornee, fillColor, outlineColor, tagName)
+    if not adornee then return nil end
+    local hl = Instance.new("Highlight")
+    hl.Name = tagName or "ESP_Player_HL"
+    hl.Adornee = adornee
+    hl.FillColor = fillColor
+    hl.OutlineColor = outlineColor
+    hl.FillTransparency = 0.75
+    hl.OutlineTransparency = 0.15
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent = adornee
+    table.insert(ESP_Container, hl)
+    return hl
+end
+
+local function RefreshPlayerESP()
+    if not config.PlayerESP.Enabled then return end
+    local myRoot = character and character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    for _, targetPlayer in ipairs(Players:GetPlayers()) do
+        if targetPlayer ~= player then
+            local tarChar = targetPlayer.Character
+            if not tarChar then continue end
+            local tarHum = tarChar:FindFirstChildOfClass("Humanoid")
+            local tarRoot = tarChar:FindFirstChild("HumanoidRootPart")
+            if not tarHum or not tarRoot or tarHum.Health <= 0 then continue end
+            local dist = math.floor((tarRoot.Position - myRoot.Position).Magnitude)
+            local fillCol = Color3.fromRGB(0,180,255)
+            local outCol = Color3.new(0,0,0)
+            if config.PlayerESP.ShowBox then
+                CreateHighlightESP(tarRoot, fillCol, outCol, "ESP_Player_HL")
+            end
+            if config.PlayerESP.ShowName or config.PlayerESP.ShowHealth or config.PlayerESP.ShowDistance then
+                local displayText = ""
+                if config.PlayerESP.ShowName then displayText = displayText .. targetPlayer.Name.."\n" end
+                if config.PlayerESP.ShowHealth then displayText = displayText .. "HP:"..math.floor(tarHum.Health).."/"..tarHum.MaxHealth.."\n" end
+                if config.PlayerESP.ShowDistance then displayText = displayText .. "距离:"..dist.." studs" end
+                CreateBillboardESP(tarRoot, displayText, "ESP_Player_BB")
+            end
+        end
+    end
+end
+
+local function RefreshZombieESP()
+    if not config.ZombieESP.Enabled then return end
+    local myRoot = character and character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    local scanPool = {}
+    local zombieFolder = workspace:FindFirstChild("AliveZombies")
+    if zombieFolder then
+        for _,m in ipairs(zombieFolder:GetChildren()) do
+            if m:IsA("Model") then table.insert(scanPool,m) end
+        end
+    end
+    for _,m in ipairs(workspace:GetDescendants()) do
+        if m:IsA("Model") and m:FindFirstChildOfClass("Humanoid") and not Players:GetPlayerFromCharacter(m) then
+            table.insert(scanPool,m)
+        end
+    end
+    for _,mobModel in ipairs(scanPool) do
+        local hum = mobModel:FindFirstChildOfClass("Humanoid")
+        local root = mobModel:FindFirstChild("HumanoidRootPart")
+        if not hum or not root or hum.Health <= 0 then continue end
+        local dist = math.floor((root.Position - myRoot.Position).Magnitude)
+        local fillCol = Color3.fromRGB(255,40,40)
+        local outCol = Color3.new(0,0,0)
+        if config.ZombieESP.ShowBox then
+            CreateHighlightESP(root, fillCol, outCol, "ESP_Zombie_HL")
+        end
+        if config.ZombieESP.ShowName or config.ZombieESP.ShowHealth or config.ZombieESP.ShowDistance then
+            local displayText = ""
+            if config.ZombieESP.ShowName then displayText = displayText .. mobModel.Name.."\n" end
+            if config.ZombieESP.ShowHealth then displayText = displayText .. "HP:"..math.floor(hum.Health).."/"..hum.MaxHealth.."\n" end
+            if config.ZombieESP.ShowDistance then displayText = displayText .. "距离:"..dist.." studs" end
+            CreateBillboardESP(root, displayText, "ESP_Zombie_BB")
+        end
+    end
+end
+
+local function StartESPGlobalLoop()
+    if ESPRefreshLoop then task.cancel(ESPRefreshLoop) end
+    ESPRefreshLoop = task.spawn(function()
+        while task.wait(0.35) do
+            ClearAllMobPlayerESP()
+            if config.PlayerESP.Enabled then RefreshPlayerESP() end
+            if config.ZombieESP.Enabled then RefreshZombieESP() end
+            if not config.PlayerESP.Enabled and not config.ZombieESP.Enabled then
+                ClearAllMobPlayerESP()
+                break
+            end
+        end
+    end)
+end
+
+local function StopESPGlobalLoop()
+    if ESPRefreshLoop then
+        task.cancel(ESPRefreshLoop)
+        ESPRefreshLoop = nil
+    end
+    ClearAllMobPlayerESP()
+end
+
+local function TogglePlayerESP(state)
+    config.PlayerESP.Enabled = state
+    if state then
+        StartESPGlobalLoop()
+        WindUI:Notify({Title="玩家ESP", Content="已开启", Icon="check"})
+    else
+        if not config.ZombieESP.Enabled then StopESPGlobalLoop() end
+        WindUI:Notify({Title="玩家ESP", Content="已关闭", Icon="x"})
+    end
+end
+
+local function ToggleZombieESP(state)
+    config.ZombieESP.Enabled = state
+    if state then
+        StartESPGlobalLoop()
+        WindUI:Notify({Title="僵尸ESP", Content="已开启", Icon="check"})
+    else
+        if not config.PlayerESP.Enabled then StopESPGlobalLoop() end
+        WindUI:Notify({Title="僵尸ESP", Content="已关闭", Icon="x"})
+    end
+end
+
 _G.OE_Script = {
     KillAura = {
         Enable = function() config.KillAura.Enabled = true; StartKillAura() end,
@@ -474,9 +681,17 @@ _G.OE_Script = {
     },
     PlayerMod = {
         SetWalkSpeed = function(speed) SetWalkSpeed(speed) end,
-        Reset = function() ResetPlayerProperties() end
+        Reset = function() ResetPlayerProperties() end,
+        ToggleCustom = function() ToggleCustomWalkSpeed(not config.PlayerMod.Enabled) end
+    },
+    PlayerESP = {
+        Toggle = function() TogglePlayerESP(not config.PlayerESP.Enabled) end
+    },
+    ZombieESP = {
+        Toggle = function() ToggleZombieESP(not config.ZombieESP.Enabled) end
     }
 }
+
 local Window = WindUI:CreateWindow({
     Title = "我们的处决脚本",
     Author = "Made by星火",
@@ -642,20 +857,32 @@ HL_Info:Paragraph({
     Title = "使用说明",
     Desc = "必须持有带有治疗玩家、AddTags远程事件的治疗工具；只会治疗血量低于阈值的其他玩家。"
 })
+
 local PlayerTab = Window:Tab({
     Title = "人物功能",
     Icon = "person"
 })
 local PL_Main = PlayerTab:Section({Title = "角色属性修改"})
+
+PL_Main:Toggle({
+    Flag = "player_walkspeed_enable",
+    Title = "启用自定义移动速度",
+    Default = config.PlayerMod.Enabled,
+    Callback = function(state)
+        ToggleCustomWalkSpeed(state)
+    end
+})
+
 PL_Main:Slider({
     Flag = "player_walkspeed",
     Title = "移动速度",
     Step = 1,
-    Value = {Min=8,Max=120,Default=config.PlayerMod.WalkSpeed},
+    Value = {Min=16,Max=120,Default=config.PlayerMod.WalkSpeed},
     Callback = function(val)
         SetWalkSpeed(val)
     end
 })
+
 PL_Main:Button({
     Title = "恢复原始速度",
     Icon = "undo",
@@ -667,8 +894,9 @@ PL_Main:Button({
 local PL_Info = PlayerTab:Section({Title = "说明信息"})
 PL_Info:Paragraph({
     Title = "使用说明",
-    Desc = "调整玩家移动速度；脚本销毁 / 全部关闭会自动恢复游戏原始速度；角色重生自动继承已设置速度。"
+    Desc = "必须开启【启用自定义移动速度】滑块才会生效；关闭开关自动恢复游戏原始16速度；脚本销毁 / 全部关闭自动复原；角色重生自动继承开关状态。"
 })
+
 local ESPTab = Window:Tab({
     Title = "透视ESP",
     Icon = "eye"
@@ -690,10 +918,95 @@ ESP_Main:Toggle({
         ToggleLadderESP(state)
     end
 })
+
+local ESP_PlayerSection = ESPTab:Section({Title = "玩家ESP"})
+ESP_PlayerSection:Toggle({
+    Flag = "player_esp_enable",
+    Title = "启用玩家ESP",
+    Default = config.PlayerESP.Enabled,
+    Callback = function(state)
+        TogglePlayerESP(state)
+    end
+})
+ESP_PlayerSection:Toggle({
+    Flag = "player_esp_box",
+    Title = "显示方框高亮",
+    Default = config.PlayerESP.ShowBox,
+    Callback = function(state)
+        config.PlayerESP.ShowBox = state
+    end
+})
+ESP_PlayerSection:Toggle({
+    Flag = "player_esp_name",
+    Title = "显示玩家名字",
+    Default = config.PlayerESP.ShowName,
+    Callback = function(state)
+        config.PlayerESP.ShowName = state
+    end
+})
+ESP_PlayerSection:Toggle({
+    Flag = "player_esp_hp",
+    Title = "显示血量",
+    Default = config.PlayerESP.ShowHealth,
+    Callback = function(state)
+        config.PlayerESP.ShowHealth = state
+    end
+})
+ESP_PlayerSection:Toggle({
+    Flag = "player_esp_dist",
+    Title = "显示距离",
+    Default = config.PlayerESP.ShowDistance,
+    Callback = function(state)
+        config.PlayerESP.ShowDistance = state
+    end
+})
+
+local ESP_ZombieSection = ESPTab:Section({Title = "僵尸/怪物ESP"})
+ESP_ZombieSection:Toggle({
+    Flag = "zombie_esp_enable",
+    Title = "启用僵尸ESP",
+    Default = config.ZombieESP.Enabled,
+    Callback = function(state)
+        ToggleZombieESP(state)
+    end
+})
+ESP_ZombieSection:Toggle({
+    Flag = "zombie_esp_box",
+    Title = "显示方框高亮",
+    Default = config.ZombieESP.ShowBox,
+    Callback = function(state)
+        config.ZombieESP.ShowBox = state
+    end
+})
+ESP_ZombieSection:Toggle({
+    Flag = "zombie_esp_name",
+    Title = "显示怪物名称",
+    Default = config.ZombieESP.ShowName,
+    Callback = function(state)
+        config.ZombieESP.ShowName = state
+    end
+})
+ESP_ZombieSection:Toggle({
+    Flag = "zombie_esp_hp",
+    Title = "显示血量",
+    Default = config.ZombieESP.ShowHealth,
+    Callback = function(state)
+        config.ZombieESP.ShowHealth = state
+    end
+})
+ESP_ZombieSection:Toggle({
+    Flag = "zombie_esp_dist",
+    Title = "显示距离",
+    Default = config.ZombieESP.ShowDistance,
+    Callback = function(state)
+        config.ZombieESP.ShowDistance = state
+    end
+})
+
 local ESP_Info = ESPTab:Section({Title = "说明信息"})
 ESP_Info:Paragraph({
     Title = "使用说明",
-    Desc = "钥匙：高亮耻辱花园内点位；梯子：填充高亮基拉特过桥后梯子模型，无描边方框。"
+    Desc = "钥匙：高亮耻辱花园内点位；梯子：填充高亮基拉特过桥后梯子模型，无描边方框；玩家ESP标记其他玩家；僵尸ESP标记存活怪物，刷新间隔0.35秒。"
 })
 local GlobalTab = Window:Tab({
     Title = "全局工具",
@@ -709,11 +1022,18 @@ GL_Main:Button({
         config.Heal.Enabled = false
         config.KeySpotESP.Enabled = false
         config.LadderESP.Enabled = false
+        config.PlayerESP.Enabled = false
+        config.ZombieESP.Enabled = false
+        config.PlayerMod.Enabled = false
+        ToggleCustomWalkSpeed(false)
+
         StopKillAura()
         stopBlocking()
         StopHeal()
         ClearKeySpotESP()
         ClearLadderESP()
+        StopESPGlobalLoop()
+        ClearAllMobPlayerESP()
         ResetPlayerProperties()
         WindUI:Notify({Title="全局", Content="全部功能已关闭，人物属性已复原", Icon="check"})
     end
@@ -722,11 +1042,16 @@ GL_Main:Button({
     Title = "销毁UI面板（全部功能失效）",
     Icon = "shredder",
     Callback = function()
+        config.PlayerMod.Enabled = false
+        ToggleCustomWalkSpeed(false)
+
         StopKillAura()
         stopBlocking()
         StopHeal()
         ClearKeySpotESP()
         ClearLadderESP()
+        StopESPGlobalLoop()
+        ClearAllMobPlayerESP()
         ResetPlayerProperties()
         Window:Destroy()
     end
@@ -748,7 +1073,13 @@ GL_Config:Button({
     Callback = function()
         local cfg = ConfigManager:CreateConfig("main")
         if cfg:Load() then
-            SetWalkSpeed(config.PlayerMod.WalkSpeed)
+            if config.PlayerMod.Enabled then
+                ToggleCustomWalkSpeed(true)
+            else
+                ToggleCustomWalkSpeed(false)
+            end
+            if config.PlayerESP.Enabled then TogglePlayerESP(true) end
+            if config.ZombieESP.Enabled then ToggleZombieESP(true) end
             WindUI:Notify({Title="配置", Content="配置加载成功", Icon="check"})
         end
     end
