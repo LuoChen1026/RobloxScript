@@ -2297,8 +2297,8 @@ local function BuildKeyUI()
                     statusLabel.Text = text .. dots[i] i = (i % #dots) + 1 task.wait(0.4)
                 end
             end)
-        elseif state == "success" then color, icon, text = Arqel.Theme.Success, getIcon("check"), customText or "Access Granted"
-        elseif state == "error" then color, icon, text = Arqel.Theme.Error, getIcon("alert"), customText or "Invalid key" end
+        elseif state == "success" then color, icon, text = Arqel.Theme.Success, getIcon("check"), customText or "卡密验证通过"
+        elseif state == "error" then color, icon, text = Arqel.Theme.Error, getIcon("alert"), customText or "卡密无效" end
         TweenService:Create(statusLabel, TweenInfo.new(0.3), {TextColor3 = color}):Play()
         TweenService:Create(statusIcon, TweenInfo.new(0.3), {ImageColor3 = color}):Play()
         statusLabel.Text = text statusIcon.Image = icon
@@ -2340,8 +2340,8 @@ local function BuildKeyUI()
                     }
                     local errCode = result.error or "Unknown"
                     errorMsg = errMsgs[errCode] or result.message or errCode
-                    if errCode == "HWID_BANNED" then task.delay(2, function() cloneref(Players.LocalPlayer):Kick("Hardware banned") end) end
-                elseif type(result) == "boolean" then valid = result errorMsg = msg or "Invalid key" end
+                    if errCode == "HWID_BANNED" then task.delay(2, function() cloneref(Players.LocalPlayer):Kick("你的设备已被封禁") end) end
+                elseif type(result) == "boolean" then valid = result errorMsg = msg or "卡密无效" end
             end
         end
         redeemBtn.Active = true
