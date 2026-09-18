@@ -1672,7 +1672,7 @@ local function BuildKeylessUI()
     launchLabel.Size = UDim2.new(0, 0, 0, 18)
     launchLabel.AutomaticSize = Enum.AutomaticSize.X
     launchLabel.BackgroundTransparency = 1
-    launchLabel.Text = "运行脚本"
+    launchLabel.Text = "加载脚本"
     launchLabel.TextColor3 = Arqel.Theme.Text
     launchLabel.TextSize = mobile and 14 or 15
     launchLabel.Font = Enum.Font.ArimoBold
@@ -2284,9 +2284,9 @@ local function BuildKeyUI()
     local function setStatus(state, customText)
         if spinConnection then spinConnection:Disconnect() spinConnection = nil statusIcon.Rotation = 0 end
         if dotsThread then task.cancel(dotsThread) dotsThread = nil end
-        local color, icon, text = Arqel.Theme.StatusIdle, getIcon("lock"), customText or "未检测到卡密"
+        local color, icon, text = Arqel.Theme.StatusIdle, getIcon("lock"), customText or "No key detected"
         if state == "verifying" then
-            color, icon, text = Arqel.Theme.Accent, getIcon("loading"), "正在验证卡密"
+            color, icon, text = Arqel.Theme.Accent, getIcon("loading"), "Verifying key"
             spinConnection = RunService.Heartbeat:Connect(function(dt)
                 if statusIcon and statusIcon.Parent then statusIcon.Rotation = (statusIcon.Rotation + dt * 360) % 360
                 else if spinConnection then spinConnection:Disconnect() end end
@@ -2297,8 +2297,8 @@ local function BuildKeyUI()
                     statusLabel.Text = text .. dots[i] i = (i % #dots) + 1 task.wait(0.4)
                 end
             end)
-        elseif state == "success" then color, icon, text = Arqel.Theme.Success, getIcon("check"), customText or "验证通过"
-        elseif state == "error" then color, icon, text = Arqel.Theme.Error, getIcon("alert"), customText or "卡密无效" end
+        elseif state == "success" then color, icon, text = Arqel.Theme.Success, getIcon("check"), customText or "Access Granted"
+        elseif state == "error" then color, icon, text = Arqel.Theme.Error, getIcon("alert"), customText or "Invalid key" end
         TweenService:Create(statusLabel, TweenInfo.new(0.3), {TextColor3 = color}):Play()
         TweenService:Create(statusIcon, TweenInfo.new(0.3), {ImageColor3 = color}):Play()
         statusLabel.Text = text statusIcon.Image = icon
@@ -2325,7 +2325,7 @@ local function BuildKeyUI()
         local key = textBox.Text:gsub("%s+", "")
         if key == "" then Arqel:Notify("错误", "请输入你的卡密", 3, "warning") return end
         setStatus("verifying") redeemBtn.Active = false task.wait(0.3)
-        local valid, errorMsg = false, "卡密无效"
+        local valid, errorMsg = false, "Invalid key"
         if Internal.ValidateFunction then
             local success, result, msg = pcall(Internal.ValidateFunction, key)
             if success then
@@ -2340,8 +2340,8 @@ local function BuildKeyUI()
                     }
                     local errCode = result.error or "Unknown"
                     errorMsg = errMsgs[errCode] or result.message or errCode
-                    if errCode == "HWID_BANNED" then task.delay(2, function() cloneref(Players.LocalPlayer):Kick("你的设备已被封禁") end) end
-                elseif type(result) == "boolean" then valid = result errorMsg = msg or "卡密无效" end
+                    if errCode == "HWID_BANNED" then task.delay(2, function() cloneref(Players.LocalPlayer):Kick("Hardware banned") end) end
+                elseif type(result) == "boolean" then valid = result errorMsg = msg or "Invalid key" end
             end
         end
         redeemBtn.Active = true
@@ -2356,7 +2356,7 @@ local function BuildKeyUI()
                 if not Internal.IsJunkieMode and Arqel.Callbacks.OnSuccess then Arqel.Callbacks.OnSuccess() end
             end)
         else
-            setStatus("error", errorMsg) Arqel:Notify("无效", errorMsg, 4, "error")
+            setStatus("error", errorMsg) Arqel:Notify("Invalid", errorMsg, 4, "error")
             if Arqel.Callbacks.OnFail then Arqel.Callbacks.OnFail(errorMsg) end
         end
     end
