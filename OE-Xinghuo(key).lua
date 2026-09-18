@@ -15,8 +15,8 @@ Arqel.Links = {
 }
 Arqel.Storage = {
     FileName = "Xinghuo_key",
-    Remember = true,
-    AutoLoad = true
+    Remember = false,
+    AutoLoad = false
 }
 Arqel.Options = {
     Keyless = nil,
