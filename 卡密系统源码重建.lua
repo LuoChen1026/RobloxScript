@@ -55,8 +55,8 @@ Arqel.Links = {
 --storage
 Arqel.Storage = {
     FileName = "Xinghuo_Key",
-    Remember = true,
-    AutoLoad = true
+    Remember = false,
+    AutoLoad = false
 }
 
 --options
