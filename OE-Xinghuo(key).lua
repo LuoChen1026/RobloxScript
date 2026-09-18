@@ -1,4 +1,4 @@
-local Arqel = loadstring(game:HttpGet("https://raw.githubusercontent.com/Cobruhehe/expert-octo-doodle/refs/heads/main/ArqelUi.luau"))()
+local Arqel = loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E5%8D%A1%E5%AF%86%E7%B3%BB%E7%BB%9F%E6%BA%90%E7%A0%81%E9%87%8D%E5%BB%BA.lua"))()
 local KEYS = {
     ["XHNB"] = "basic",
     ["XHNB666"] = "premium"
