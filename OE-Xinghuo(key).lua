@@ -66,7 +66,7 @@ end
 Arqel.Callbacks.OnSuccess = function()
     Arqel:Notify("成功", "验证通过!", 2, "success")
     if getgenv().USER_TIER == "premium" then
-        loadstring(game:HttpGet("https://rawscripts.net/raw/Our-Execution-OE-137018"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/yuanshenqdon/Script/refs/heads/main/最后的处决"))()
     else
         loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E6%88%91%E4%BB%AC%E7%9A%84%E5%A4%84%E5%86%B3%E5%9F%BA%E7%A1%80%E7%89%88.lua"))()
     end
