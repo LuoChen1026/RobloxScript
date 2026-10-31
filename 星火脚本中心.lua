@@ -70,9 +70,20 @@ local MainTab = Window:Tab({
     Icon = "gun"
 })
 
+MainTab:Button({
+    Title = "LC-NEX",
+    Description = "NEX脚本",
+    Tooltip = "别人制作，代为缝合", -- 鼠标悬停弹出气泡
+    Disabled = false,
+    Callback = function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/LC-NEX.lua"))()
+    end
+})
+
 -- Settings Tab
 -- Theme
 local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
+
 
 ThemeTab:Dropdown({
     Title  = "主题",
@@ -118,5 +129,3 @@ WindUI:Notify({
   Title = "星火脚本中心",
   Content = "欢迎使用星火脚本中心!",
 })
-
-WindUI:SetNotificationLower(true)
