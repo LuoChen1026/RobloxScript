@@ -14944,11 +14944,11 @@ J=true
 
 aw:Dialog{
 
-Title="Close Window",
-Content="Do you want to close this window? You will not be able to open it again.",
+Title="关闭脚本",
+Content="你想关闭这个脚本吗？关闭后你将无法再次打开它",
 Buttons={
 {
-Title="Cancel",
+Title="取消",
 
 Callback=function()
 J=false
