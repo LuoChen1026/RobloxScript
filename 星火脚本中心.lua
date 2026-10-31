@@ -7,7 +7,7 @@ local Camera = workspace.CurrentCamera
 
 WindUI:AddTheme({
     Name = "暗黑", -- theme name
-    Name = "棉花糖",
+   
     Accent = Color3.fromHex("#18181b"),
     Background = Color3.fromHex("#101010"), -- Accent
     Outline = Color3.fromHex("#FFFFFF"),
@@ -66,8 +66,8 @@ local Window = WindUI:CreateWindow({
 
 -- Main Tab
 local MainTab = Window:Tab({
-    Title = "主要",
-    Icon = "house"
+    Title = "LC",
+    Icon = "gun"
 })
 
 -- Settings Tab
@@ -75,7 +75,7 @@ local MainTab = Window:Tab({
 local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
 ThemeTab:Dropdown({
-    Title  = "Theme",
+    Title  = "主题",
     Values = (function()
         local names = {}
         for name in pairs(WindUI:GetThemes()) do
@@ -91,7 +91,7 @@ ThemeTab:Dropdown({
 })
 
 ThemeTab:Toggle({
-    Title = "Acrylic",
+    Title = "毛玻璃",
     Value = WindUI : GetTransparency(),
     Callback = function()
         local isOn = WindUI.Window.Acrylic
@@ -100,22 +100,11 @@ ThemeTab:Toggle({
 })
 
 ThemeTab:Toggle({
-    Title = "Transparent",
+    Title = "透明度",
     Value = WindUI:GetTransparency(),
     Callback = function(state)
         Window:ToggleTransparency(state)
     end
-})
-
-local currentKey = Enum.KeyCode.RightShift -- Keybind ToogleUi
-
-ThemeTab:Keybind({
-    Title = "Toggle UI Key",
-    Value = currentKey,
-    Callback = function(v)
-        currentKey = (typeof(v) == "EnumItem") and v or Enum.KeyCode[v]
-        Window:SetToggleKey(currentKey)
-    end,
 })
 
 UserInputService.InputBegan:Connect(function(input)
