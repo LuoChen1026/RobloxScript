@@ -4,10 +4,8 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-
 WindUI:AddTheme({
     Name = "暗黑", -- theme name
-   
     Accent = Color3.fromHex("#18181b"),
     Background = Color3.fromHex("#101010"), -- Accent
     Outline = Color3.fromHex("#FFFFFF"),
@@ -16,7 +14,6 @@ WindUI:AddTheme({
     Button = Color3.fromHex("#52525b"),
     Icon = Color3.fromHex("#a1a1aa"),
 })
-
 local Window = WindUI:CreateWindow({
     Title   = "星火脚本中心",
     Author  = "星火制作",
@@ -63,13 +60,11 @@ local Window = WindUI:CreateWindow({
         end,
     },
 })
-
 -- Main Tab
 local MainTab = Window:Tab({
     Title = "LC",
-    Icon = "gun"
+    Icon = "🔫"
 })
-
 MainTab:Button({
     Title = "LC-NEX",
     Description = "NEX脚本",
@@ -79,12 +74,9 @@ MainTab:Button({
     loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/LC-NEX.lua"))()
     end
 })
-
 -- Settings Tab
 -- Theme
 local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
-
-
 ThemeTab:Dropdown({
     Title  = "主题",
     Values = (function()
@@ -100,7 +92,6 @@ ThemeTab:Dropdown({
         WindUI:SetTheme(selected)
     end,
 })
-
 ThemeTab:Toggle({
     Title = "毛玻璃",
     Value = WindUI : GetTransparency(),
@@ -109,7 +100,6 @@ ThemeTab:Toggle({
         WindUI:ToggleAcrylic(not isOn)
     end,
 })
-
 ThemeTab:Toggle({
     Title = "透明度",
     Value = WindUI:GetTransparency(),
@@ -117,13 +107,11 @@ ThemeTab:Toggle({
         Window:ToggleTransparency(state)
     end
 })
-
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == currentKey then
         Window:Toggle()
     end
 end)
-
 -- Notify
 WindUI:Notify({
   Title = "星火脚本中心",
