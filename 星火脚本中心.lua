@@ -7,7 +7,7 @@ local Camera = workspace.CurrentCamera
 
 WindUI:AddTheme({
     Name = "暗黑", -- theme name
-    
+    Name = "棉花糖",
     Accent = Color3.fromHex("#18181b"),
     Background = Color3.fromHex("#101010"), -- Accent
     Outline = Color3.fromHex("#FFFFFF"),
