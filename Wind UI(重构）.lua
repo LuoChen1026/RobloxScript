@@ -14956,7 +14956,7 @@ end,
 Variant="Secondary",
 },
 {
-Title="Close Window",
+Title="关闭脚本",
 
 Callback=function()
 J=false
@@ -15506,7 +15506,7 @@ aa.Themes=a.load'v'(aa,as)
 
 as.Themes=aa.Themes
 
-aa:SetTheme"Dark"
+aa:SetTheme"暗黑"
 aa:SetLanguage(as.Language)
 
 function aa.CreateWindow(az,aA)
