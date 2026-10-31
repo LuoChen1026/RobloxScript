@@ -107,6 +107,17 @@ ThemeTab:Toggle({
         Window:ToggleTransparency(state)
     end
 })
+       local currentKey = Enum.KeyCode.RightShift -- Keybind ToogleUi
+
+ThemeTab:Keybind({
+    Title = "Toggle UI Key",
+    Value = currentKey,
+    Callback = function(v)
+        currentKey = (typeof(v) == "EnumItem") and v or Enum.KeyCode[v]
+        Window:SetToggleKey(currentKey)
+    end,
+})
+
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == currentKey then
         Window:Toggle()
