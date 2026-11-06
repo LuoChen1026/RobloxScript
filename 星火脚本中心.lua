@@ -4,8 +4,10 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+
 WindUI:AddTheme({
-    Name = "暗黑", -- theme name
+    Name = "Dark", -- theme name
+    
     Accent = Color3.fromHex("#18181b"),
     Background = Color3.fromHex("#101010"), -- Accent
     Outline = Color3.fromHex("#FFFFFF"),
@@ -14,10 +16,11 @@ WindUI:AddTheme({
     Button = Color3.fromHex("#52525b"),
     Icon = Color3.fromHex("#a1a1aa"),
 })
+
 local Window = WindUI:CreateWindow({
-    Title   = "星火脚本中心",
+    Title   = "XH脚本中心",
     Author  = "星火制作",
-    Folder  = "XH HUB",
+    Folder  = "XHHUB",
     Icon    = "paint-bucket",
     Theme   = "Dark",
     Acrylic = true,
@@ -39,7 +42,7 @@ local Window = WindUI:CreateWindow({
         ButtonsType = "Default",
     },
     OpenButton = {
-        Title = "星火脚本中心",
+        Title = "XH HUB",
         Icon = "zap",
         CornerRadius = UDim.new(1, 0),
         StrokeThickness = 3,
@@ -60,25 +63,63 @@ local Window = WindUI:CreateWindow({
         end,
     },
 })
--- Main Tab
-local MainTab = Window:Tab({
-    Title = "LC",
-    Icon = "🔫"
+
+Window:Tag({
+    Title = "V1.0",
+    Icon = "github",
+    Color = Color3.fromHex("#30ff6a"),
+    Radius = 0, -- from 0 to 13
 })
-MainTab:Button({
-    Title = "LC-NEX",
-    Description = "NEX脚本",
-    Tooltip = "别人制作，代为缝合", -- 鼠标悬停弹出气泡
-    Disabled = false,
-    Callback = function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/LC-NEX.lua"))()
+
+local ConfigManager = Window.ConfigManager
+local myConfig = ConfigManager:CreateConfig("XH HUB") -- will be saved as config1.json
+
+Tab:Toggle({
+    Title = "Toggle Example",
+    Flag = "ToggleElement",
+    Callback = function(v)
+        print("Toggle: " .. v)
     end
 })
+
+myConfig:Save()
+myConfig:Load()
+
+-- Main Tab
+local Tab = Window:Tab({
+    Title = "PVP类",
+    Icon = "target"
+})
+
+WindUI:SetNotificationLower(true) 
+local Section = Tab:Section({
+    Title = "莱克星顿与康科德LC",
+    Icon = "target",
+    Opened = true,
+})
+
+Section:Button({
+    Title = "LC-NEX",        --按钮主文字
+    Description = "NEX制作", --小字说明（你要的）
+    Tooltip = "缝合进来的",     --鼠标悬停弹出气泡
+    Disabled = false,
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/LC-NEX.lua"))()
+        WindUI:Notify({
+    Title = "脚本执行成功！",
+    Content = "LC-NEX脚本已经成功执行！",
+    Duration = 3, --显示时长(秒)
+    Icon = "check-circle", --图标，lucide图标名
+})
+    end
+})
+
 -- Settings Tab
 -- Theme
 local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
+
 ThemeTab:Dropdown({
-    Title  = "主题",
+    Title  = "Theme",
     Values = (function()
         local names = {}
         for name in pairs(WindUI:GetThemes()) do
@@ -92,6 +133,7 @@ ThemeTab:Dropdown({
         WindUI:SetTheme(selected)
     end,
 })
+
 ThemeTab:Toggle({
     Title = "毛玻璃",
     Value = WindUI : GetTransparency(),
@@ -100,14 +142,16 @@ ThemeTab:Toggle({
         WindUI:ToggleAcrylic(not isOn)
     end,
 })
+
 ThemeTab:Toggle({
-    Title = "透明度",
+    Title = "透明",
     Value = WindUI:GetTransparency(),
     Callback = function(state)
         Window:ToggleTransparency(state)
     end
 })
-       local currentKey = Enum.KeyCode.RightShift -- Keybind ToogleUi
+
+local currentKey = Enum.KeyCode.RightShift -- Keybind ToogleUi
 
 ThemeTab:Keybind({
     Title = "Toggle UI Key",
@@ -123,8 +167,28 @@ UserInputService.InputBegan:Connect(function(input)
         Window:Toggle()
     end
 end)
+
 -- Notify
 WindUI:Notify({
-  Title = "星火脚本中心",
-  Content = "欢迎使用星火脚本中心!",
+  Title = "XH HUB",
+  Content = "欢迎使用XH HUB!",
+})
+
+WindUI:Popup({
+    Title = "警告！！！",
+    Icon = "info",
+    Content = "使用此脚本即表示您已知道并愿意自行承担相应的风险",
+    Buttons = {
+        {
+            Title = "关闭",
+            Callback = function() end,
+            Variant = "Tertiary",
+        },
+        {
+            Title = "继续",
+            Icon = "arrow-right",
+            Callback = function() end,
+            Variant = "Primary",
+        }
+    }
 })
