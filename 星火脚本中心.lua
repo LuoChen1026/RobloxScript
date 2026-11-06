@@ -27,6 +27,7 @@ local Window = WindUI:CreateWindow({
     Theme   = "Dark",
     Acrylic = true,
     Transparent = true,
+    Visible = false, -- ✅新增：启动时窗口隐藏
     Background = "rbxassetid://84152360484913",
     Size    = UDim2.fromOffset(680, 460),
     MinSize = Vector2.new(560, 350),
@@ -116,23 +117,8 @@ Section:Button({
 })
 
 -- Settings Tab
-local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
-ThemeTab:Dropdown({
-    Title  = "Theme",
-    Values = function()
-        local names = {}
-        for name in pairs(WindUI:GetThemes()) do
-            table.insert(names, name)
-        end
-        table.sort(names)
-        return names
-    end,
-    Value = function() return WindUI:GetCurrentTheme() end,
-    Callback = function(selected)
-        WindUI:SetTheme(selected)
-    end,
-})
+local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
 ThemeTab:Toggle({
     Title = "毛玻璃",
@@ -176,13 +162,22 @@ WindUI:Popup({
     Buttons = {
         {
             Title = "关闭",
-            Callback = function() end,
+            Callback = function()
+                Window:Destroy() -- ❌点击关闭，直接销毁整个UI，退出
+            end,
             Variant = "Tertiary",
         },
         {
             Title = "继续",
             Icon = "arrow-right",
-            Callback = function() end,
+            Callback = function()
+                Window:SetVisible(true) -- ✅点击继续才显示主UI
+                -- 欢迎通知放到这里，UI显示后再弹出
+                WindUI:Notify({
+                    Title = "XH HUB",
+                    Content = "欢迎使用XH HUB!",
+                })
+            end,
             Variant = "Primary",
         }
     }
