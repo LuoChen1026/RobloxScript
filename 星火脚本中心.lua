@@ -70,7 +70,7 @@ Window:Tag({
     Title = "V1.0",
     Icon = "github",
     Color = Color3.fromHex("#30ff6a"),
-    Radius = 0,
+    Radius = 8,
 })
 
 local ConfigManager = Window.ConfigManager
