@@ -117,32 +117,34 @@ Section:Button({
 
 -- Settings Tab
 local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
+
 ThemeTab:Dropdown({
     Title  = "Theme",
-    Values = (function()
+    Values = function()
         local names = {}
         for name in pairs(WindUI:GetThemes()) do
             table.insert(names, name)
         end
         table.sort(names)
         return names
-    end)(),
-    Value    = WindUI:GetCurrentTheme(),
+    end,
+    Value = function() return WindUI:GetCurrentTheme() end,
     Callback = function(selected)
         WindUI:SetTheme(selected)
     end,
 })
 
 ThemeTab:Toggle({
-    Title = "Acrylic",
-    Value = true, --窗口初始化Acrylic=true
+    Title = "毛玻璃",
+    Value = true,
     Callback = function(state)
         WindUI:ToggleAcrylic(state)
     end,
 })
+
 ThemeTab:Toggle({
-    Title = "Transparent",
-    Value = true, --窗口初始化Transparent=true
+    Title = "透明",
+    Value = true,
     Callback = function(state)
         Window:ToggleTransparency(state)
     end
