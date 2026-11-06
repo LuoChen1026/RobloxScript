@@ -197,14 +197,13 @@ WindUI:AddTheme({
 WindUI:SetNotificationLower(true)
 
 local Window = WindUI:CreateWindow({
-    Title   = "XH脚本中心",
+    Title   = "XH HUB",
     Author  = "星火制作",
-    Folder  = "XHHUB",
+    Folder  = "XH HUB",
     Icon    = "paint-bucket",
-    Theme   = "Dark",
+    Theme   = "暗黑",
     Acrylic = true,
     Transparent = true,
-    Visible = false, --主窗口初始隐藏
     Background = "rbxassetid://84152360484913",
     Size    = UDim2.fromOffset(680, 460),
     MinSize = Vector2.new(560, 350),
@@ -226,7 +225,7 @@ local Window = WindUI:CreateWindow({
         Icon = "zap",
         CornerRadius = UDim.new(1, 0),
         StrokeThickness = 3,
-        Enabled = false, -- ✅悬浮打开按钮初始关闭，询问阶段不显示
+        Enabled = true,
         Draggable = true,
         OnlyMobile = false,
         Scale = 1,
@@ -331,28 +330,17 @@ WindUI:Notify({
 WindUI:Popup({
     Title = "警告！！！",
     Icon = "info",
-    Content = "使用此脚本即表示您已知道并愿意自行承担相应的风险",
+    Content = "使用本脚本，即代表您已知晓风险并愿意自行承担相应后果",
     Buttons = {
         {
             Title = "关闭",
-            Callback = function()
-                Window:Destroy() --销毁全部UI，直接退出
-            end,
+            Callback = function() end,
             Variant = "Tertiary",
         },
         {
             Title = "继续",
             Icon = "arrow-right",
-            Callback = function()
-                -- 点击继续后才显示主窗口 和 悬浮按钮
-                Window:SetVisible(true)
-                Window.OpenButton.Enabled = true --启用悬浮小圆按钮
-
-                WindUI:Notify({
-                    Title = "XH HUB",
-                    Content = "欢迎使用XH HUB!",
-                })
-            end,
+            Callback = function() end,
             Variant = "Primary",
         }
     }
