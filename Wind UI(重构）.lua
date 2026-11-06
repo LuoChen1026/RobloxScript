@@ -11656,7 +11656,7 @@ Locked=ap.Locked,
 ShowTabTitle=ap.ShowTabTitle,
 TabTitleAlign=ap.TabTitleAlign or"Left",
 CustomEmptyPage=(ap.CustomEmptyPage and next(ap.CustomEmptyPage)~=nil)and ap.CustomEmptyPage
-or{Icon="lucide:frown",IconSize=48,Title="This tab is Empty",Desc=nil},
+or{Icon="lucide:frown",IconSize=48,Title="此页面为空",Desc=nil},
 Border=ap.Border,
 Selected=false,
 Index=nil,
@@ -14945,7 +14945,7 @@ J=true
 aw:Dialog{
 
 Title="关闭脚本",
-Content="你想关闭这个脚本吗？关闭后你将无法再次打开它",
+Content="你想关闭这个脚本吗？关闭后除非再次执行否则你将无法再次打开它",
 Buttons={
 {
 Title="取消",

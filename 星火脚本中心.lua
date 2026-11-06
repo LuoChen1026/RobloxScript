@@ -6,16 +6,18 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 WindUI:AddTheme({
-    Name = "Dark", -- theme name
-    
+    Name = "Dark",
     Accent = Color3.fromHex("#18181b"),
-    Background = Color3.fromHex("#101010"), -- Accent
+    Background = Color3.fromHex("#101010"),
     Outline = Color3.fromHex("#FFFFFF"),
     Text = Color3.fromHex("#FFFFFF"),
     Placeholder = Color3.fromHex("#7a7a7a"),
     Button = Color3.fromHex("#52525b"),
     Icon = Color3.fromHex("#a1a1aa"),
 })
+
+-- ✅移到CreateWindow之前
+WindUI:SetNotificationLower(true)
 
 local Window = WindUI:CreateWindow({
     Title   = "XH脚本中心",
@@ -68,22 +70,11 @@ Window:Tag({
     Title = "V1.0",
     Icon = "github",
     Color = Color3.fromHex("#30ff6a"),
-    Radius = 0, -- from 0 to 13
+    Radius = 0,
 })
 
 local ConfigManager = Window.ConfigManager
-local myConfig = ConfigManager:CreateConfig("XH HUB") -- will be saved as config1.json
-
-Tab:Toggle({
-    Title = "Toggle Example",
-    Flag = "ToggleElement",
-    Callback = function(v)
-        print("Toggle: " .. v)
-    end
-})
-
-myConfig:Save()
-myConfig:Load()
+local myConfig = ConfigManager:CreateConfig("XH HUB")
 
 -- Main Tab
 local Tab = Window:Tab({
@@ -91,33 +82,41 @@ local Tab = Window:Tab({
     Icon = "target"
 })
 
-WindUI:SetNotificationLower(true) 
 local Section = Tab:Section({
-    Title = "莱克星顿与康科德LC",
+    Title = "莱克星顿与康科德L&C",
     Icon = "target",
     Opened = true,
 })
 
 Section:Button({
-    Title = "LC-NEX",        --按钮主文字
-    Description = "NEX制作", --小字说明（你要的）
-    Tooltip = "缝合进来的",     --鼠标悬停弹出气泡
+    Title = "LC-NEX",
+    Description = "NEX制作",
+    Tooltip = "缝合进来的",
     Disabled = false,
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/LC-NEX.lua"))()
-        WindUI:Notify({
-    Title = "脚本执行成功！",
-    Content = "LC-NEX脚本已经成功执行！",
-    Duration = 3, --显示时长(秒)
-    Icon = "check-circle", --图标，lucide图标名
-})
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/LC-NEX.lua"))()
+        end)
+        if ok then
+            WindUI:Notify({
+                Title = "脚本执行成功！",
+                Content = "LC‑NEX脚本已经成功执行！",
+                Duration = 3,
+                Icon = "check-circle",
+            })
+        else
+            WindUI:Notify({
+                Title = "脚本执行失败",
+                Content = tostring(err),
+                Duration = 4,
+                Icon = "x-circle"
+            })
+        end
     end
 })
 
 -- Settings Tab
--- Theme
 local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
-
 ThemeTab:Dropdown({
     Title  = "Theme",
     Values = (function()
@@ -135,40 +134,34 @@ ThemeTab:Dropdown({
 })
 
 ThemeTab:Toggle({
-    Title = "毛玻璃",
-    Value = WindUI : GetTransparency(),
-    Callback = function()
-        local isOn = WindUI.Window.Acrylic
-        WindUI:ToggleAcrylic(not isOn)
+    Title = "Acrylic",
+    Value = true, --窗口初始化Acrylic=true
+    Callback = function(state)
+        WindUI:ToggleAcrylic(state)
     end,
 })
-
 ThemeTab:Toggle({
-    Title = "透明",
-    Value = WindUI:GetTransparency(),
+    Title = "Transparent",
+    Value = true, --窗口初始化Transparent=true
     Callback = function(state)
         Window:ToggleTransparency(state)
     end
 })
 
-local currentKey = Enum.KeyCode.RightShift -- Keybind ToogleUi
-
 ThemeTab:Keybind({
     Title = "Toggle UI Key",
-    Value = currentKey,
+    Value = Enum.KeyCode.RightShift,
     Callback = function(v)
-        currentKey = (typeof(v) == "EnumItem") and v or Enum.KeyCode[v]
+        local currentKey = (typeof(v) == "EnumItem") and v or Enum.KeyCode[v]
         Window:SetToggleKey(currentKey)
     end,
 })
 
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == currentKey then
-        Window:Toggle()
-    end
-end)
+-- ✅删掉手动 UserInputService.InputBegan 监听！窗口自带ToggleKey
 
--- Notify
+--全部控件完成后加载配置
+myConfig:Load()
+
 WindUI:Notify({
   Title = "XH HUB",
   Content = "欢迎使用XH HUB!",
