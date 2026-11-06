@@ -111,48 +111,6 @@ WindUI:AddTheme({
 })
 
 WindUI:AddTheme({
-    Name = "安柏",
-    Accent = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#b45309"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#d97706"),Transparency=0},
-    },{Rotation=45}),
-    Dialog = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#451a03"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#6b2e05"),Transparency=0},
-    },{Rotation=90}),
-    Text = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#fffbeb"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#fff7ed"),Transparency=0},
-    },{Rotation=45}),
-    Placeholder = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#d1a326"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#fbbf24"),Transparency=0},
-    },{Rotation=45}),
-    Background = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#1c1003"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#3f210d"),Transparency=0},
-    },{Rotation=90}),
-    Button = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#d97706"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#f59e0b"),Transparency=0},
-    },{Rotation=45}),
-    Icon = Color3.fromHex("#f59e0b"),
-    Toggle = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#d97706"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#f59e0b"),Transparency=0},
-    },{Rotation=45}),
-    Slider = Color3.fromHex("#d97706"),
-    Checkbox = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#d97706"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#fbbf24"),Transparency=0},
-    },{Rotation=45}),
-    PanelBackground = Color3.fromHex("#FFFFFF"),
-    PanelBackgroundTransparency = 0.95,
-    ElementBackground = Color3.fromHex("#3A2E22"),
-    ElementBackgroundTransparency = 0,
-})
-
-WindUI:AddTheme({
     Name = "翡翠",
     Accent = Color3.fromHex("#047857"),
     Dialog = Color3.fromHex("#022c22"),
@@ -235,41 +193,6 @@ WindUI:AddTheme({
     ElementBackgroundTransparency = 0,
 })
 
-WindUI:AddTheme({
-    Name = "彩虹",
-    Accent = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#00ff41"),Transparency=0},
-        ["33"]={Color=Color3.fromHex("#00ffff"),Transparency=0},
-        ["66"]={Color=Color3.fromHex("#0080ff"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#8000ff"),Transparency=0},
-    },{Rotation=45}),
-    Dialog = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#ff0080"),Transparency=0},
-        ["25"]={Color=Color3.fromHex("#8000ff"),Transparency=0},
-        ["50"]={Color=Color3.fromHex("#0080ff"),Transparency=0},
-        ["75"]={Color=Color3.fromHex("#00ff80"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#ff8000"),Transparency=0},
-    },{Rotation=135}),
-    Text = Color3.fromHex("#ffffff"),
-    Placeholder = Color3.fromHex("#00ff80"),
-    Background = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#ff0040"),Transparency=0},
-        ["20"]={Color=Color3.fromHex("#ff4000"),Transparency=0},
-        ["40"]={Color=Color3.fromHex("#ffff00"),Transparency=0},
-        ["60"]={Color=Color3.fromHex("#00ff40"),Transparency=0},
-        ["80"]={Color=Color3.fromHex("#0040ff"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#4000ff"),Transparency=0},
-    },{Rotation=90}),
-    Button = aa:Gradient({
-        ["0"]={Color=Color3.fromHex("#ff0080"),Transparency=0},
-        ["25"]={Color=Color3.fromHex("#ff8000"),Transparency=0},
-        ["50"]={Color=Color3.fromHex("#ffff00"),Transparency=0},
-        ["75"]={Color=Color3.fromHex("#80ff00"),Transparency=0},
-        ["100"]={Color=Color3.fromHex("#00ffff"),Transparency=0},
-    },{Rotation=60}),
-    Icon = Color3.fromHex("#ffffff"),
-})
-
 -- ✅移到CreateWindow之前
 WindUI:SetNotificationLower(true)
 
@@ -325,7 +248,7 @@ Window:Tag({
     Title = "V1.0",
     Icon = "github",
     Color = Color3.fromHex("#30ff6a"),
-    Radius = 8,
+    Radius = 12,
 })
 
 local ConfigManager = Window.ConfigManager
@@ -375,8 +298,8 @@ local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
 ThemeTab:Dropdown({
     Title  = "Theme",
-    Values = {"暗黑","光亮","玫瑰","植物","红色","靛蓝","天空","紫罗兰","安柏","翡翠","午夜","猩红","Monokai Pro","棉花糖","Mellowsi","彩虹"},
-    Value = "Dark",
+    Values = {"暗黑","光亮","玫瑰","植物","红色","靛蓝","天空","紫罗兰","翡翠","午夜","猩红","Monokai Pro","棉花糖","Mellowsi"},
+    Value = "暗黑",
     Callback = function(selected)
         WindUI:SetTheme(selected)
     end,
