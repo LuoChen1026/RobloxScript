@@ -1,6 +1,5 @@
 -- ========== 全新翻译表 (X-HUB 适配版) ==========
 local Translations = {
-    -- 基础 UI & 侧边栏
     ["Zero Hub | Our Execution"] = "XH HUB | 我们的处决",
     ["Updated in 2026-09-10"]    = "更新于 2026-09-10",
     ["Search"]                   = "搜索",
@@ -14,19 +13,13 @@ local Translations = {
     ["Sapper"]                   = "工兵",
     ["Heal"]                     = "治疗",
     ["Open Gui"]                 = "打开脚本",
-    
-    -- 信息面板
     ["User"]                     = "用户",
     ["Kills:"]                   = "击杀:",
     ["Upira:"]                   = "乌皮拉:",
-    
-    -- 功能
     ["Zombies ESP"]              = "僵尸透视",
     ["Runner ESP"]               = "跑者透视",
     ["Expand"]                   = "命中箱扩大",
     ["Head"]                     = "头部",
-    
-    -- 主题列表
     ["Rose"]                     = "玫瑰",
     ["Rainbow"]                  = "彩虹",
     ["Plant"]                    = "植物",
@@ -114,19 +107,12 @@ local function isIconFont(d)
             if d.Font == Enum.Font.MaterialIcons or d.Font == Enum.Font.MaterialIconsRegular then
                 isIcon = true
             end
-            if not isIcon and d.FontFace and d.FontFace.Font then
-                local family = d.FontFace.Font.Family
-                if type(family) == "string" and (family:lower():find("material") or family:lower():find("icon")) then
-                    isIcon = true
-                end
-            end
         end
     end)
     return isIcon
 end
 
 local function shouldSkip(d, key, value)
-    -- 修复：仅当 Text 为 Search 且是 Label/Button 时才跳过（因为通常是图标），TextBox 的 Placeholder 依然可以翻译
     if key == "Text" and value == "Search" then
         if d:IsA("TextLabel") or d:IsA("TextButton") then
             return true
@@ -154,7 +140,7 @@ do
         end)
         setreadonly(mt, true)
     end)
-    if not ok then warn("[汉化] hook 失败:", err) end
+    if not ok then warn("[汉化] Hook 注入失败:", err) end
 end
 
 local function isTextObj(d)
@@ -206,21 +192,30 @@ if player and player:FindFirstChild("PlayerGui") then
     sweepAsync(player.PlayerGui, 150)
 end
 
--- 加载主脚本
+-- ================= 加载主脚本 (带日志) =================
+print("[汉化] 汉化引擎已启动，准备下载主脚本...")
 task.wait(1)
-local s, e = pcall(function()
-    -- 这里是你提供的链接
-    local url = "https://raw.githubusercontent.com/yuanshenqdon/Script/refs/heads/main/%E6%9C%80%E5%90%8E%E7%9A%84%E5%A4%84%E5%86%B3"
-    local success, code = pcall(game.HttpGet, game, url)
-    if success and code then
-        local func, loadErr = loadstring(code)
-        if func then
-            func()
+
+local url = "https://raw.githubusercontent.com/yuanshenqdon/Script/refs/heads/main/%E6%9C%80%E5%90%8E%E7%9A%84%E5%A4%84%E5%86%B3"
+local success, code = pcall(function()
+    return game:HttpGet(url, true)
+end)
+
+if not success or not code or code == "" then
+    warn("[错误] 下载主脚本失败！可能是链接失效或你的网络无法连接 GitHub。")
+else
+    print("[汉化] 下载成功，正在解析代码...")
+    local func, loadErr = loadstring(code, "MainScript")
+    if func then
+        print("[汉化] 正在执行主脚本...")
+        local execSuccess, execErr = pcall(func)
+        if not execSuccess then
+            warn("[错误] 主脚本内部执行崩溃，报错信息: " .. tostring(execErr))
+            warn("这通常是原作者脚本代码问题或执行器不兼容，非汉化导致。")
         else
-            warn("[执行] 脚本代码解析失败:", loadErr)
+            print("[汉化] 主脚本加载完毕！")
         end
     else
-        warn("[执行] 下载主脚本失败，请检查链接是否有效！")
+        warn("[错误] 代码解析失败，报错信息: " .. tostring(loadErr))
     end
-end)
-if not s then warn("[执行] 运行异常:", e) end
+end
