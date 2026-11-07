@@ -310,7 +310,7 @@ Section:Button({
     Disabled = false,
     Callback = function()
         local ok, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E8%AF%95%E7%82%BC.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E8%AF%95%E7%82%BC-TomTamX.lua"))()
         end)
         if ok then
             WindUI:Notify({
