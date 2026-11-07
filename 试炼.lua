@@ -1,7 +1,7 @@
 -- ========== 全新翻译表 (Examination Hub) ==========
 local Translations = {
     -- ================= 基础 UI =================
-    ["Examination"] = "试炼",
+    ["Examination"] = "考试",
     ["by TomTamX"]  = "TomTamX制作 星火汉化",
     ["Search"]      = "搜索",
     ["features..."] = "功能...",

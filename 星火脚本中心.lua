@@ -200,7 +200,7 @@ local Window = WindUI:CreateWindow({
     Title   = "XH HUB",
     Author  = "星火制作",
     Folder  = "XH HUB",
-    Icon    = "paint-bucket",
+    Icon    = "crown",
     Theme   = "暗黑",
     Acrylic = true,
     Transparent = true,
@@ -222,7 +222,7 @@ local Window = WindUI:CreateWindow({
     },
     OpenButton = {
         Title = "XH HUB",
-        Icon = "zap",
+        Icon = "sparkles",
         CornerRadius = UDim.new(1, 0),
         StrokeThickness = 3,
         Enabled = true,
@@ -294,12 +294,12 @@ Section:Button({
 
 local Tab = Window:Tab({
     Title = "PVE类",
-    Icon = "virus"
+    Icon = "swords"
 })
 
 local Section = Tab:Section({
     Title = "试炼Examination",
-    Icon = "germ",
+    Icon = "swords",
     Opened = true,
 })
 
@@ -334,7 +334,7 @@ Section:Button({
 local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
 ThemeTab:Dropdown({
-    Title  = "Theme",
+    Title  = "主题",
     Values = {"暗黑","光亮","玫瑰","植物","红色","靛蓝","天空","紫罗兰","翡翠","午夜","猩红","Monokai Pro","棉花糖","Mellowsi"},
     Value = "暗黑",
     Callback = function(selected)
