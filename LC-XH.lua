@@ -2,7 +2,7 @@ local Translations = {
 ["NEX-LC Hub"]= "XH-LC HUB",
 ["Search"]= "搜索",
 ["By HL_linfeng"]= "星火制作",
-["NEX-Lexington and Concord"]= "XH-Lexington and Concord",
+["NEX"]= "XH",
 ["Toggle"]= "开关",
 }
 
