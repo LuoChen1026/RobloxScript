@@ -298,7 +298,7 @@ local Tab = Window:Tab({
 })
 
 local Section = Tab:Section({
-    Title = "试炼Examination",
+    Title = "试炼",
     Icon = "swords",
     Opened = true,
 })

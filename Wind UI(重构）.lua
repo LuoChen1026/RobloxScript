@@ -15137,7 +15137,7 @@ local R=false
 
 
 
-local S=aq("Search","search",aw.UIElements.SideBarContainer,true)
+local S=aq("搜索","search",aw.UIElements.SideBarContainer,true)
 S.Size=UDim2.new(1,-aw.UIPadding/2,0,39)
 S.Position=UDim2.new(0,aw.UIPadding/2,0,0)
 
