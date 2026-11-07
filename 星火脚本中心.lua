@@ -262,13 +262,13 @@ local Tab = Window:Tab({
 local Section = Tab:Section({
     Title = "莱克星顿与康科德L&C",
     Icon = "target",
-    Opened = true,
+    Opened = false,
 })
 
 Section:Button({
     Title = "LC-XH",
     Description = "星火制作",
-    Tooltip = "二改别人的",
+    Tooltip = "二改NEX",
     Disabled = false,
     Callback = function()
         local ok, err = pcall(function()
@@ -299,8 +299,8 @@ local Tab = Window:Tab({
 
 local Section = Tab:Section({
     Title = "试炼",
-    Icon = "swords",
-    Opened = true,
+    Icon = "virus",
+    Opened = false,
 })
 
 Section:Button({
@@ -316,6 +316,39 @@ Section:Button({
             WindUI:Notify({
                 Title = "脚本执行成功！",
                 Content = "试炼‑TomTamX脚本已经成功执行！",
+                Duration = 3,
+                Icon = "check-circle",
+            })
+        else
+            WindUI:Notify({
+                Title = "脚本执行失败",
+                Content = tostring(err),
+                Duration = 4,
+                Icon = "x-circle"
+            })
+        end
+    end
+})
+
+local Section = Tab:Section({
+    Title = "我们的处决",
+    Icon = "gem",
+    Opened = false,
+})
+
+Section:Button({
+    Title = "我们的处决-XH",
+    Description = "星火制作",
+    Tooltip = "二改Zero",
+    Disabled = false,
+    Callback = function()
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/OE-XH.lua"))()
+        end)
+        if ok then
+            WindUI:Notify({
+                Title = "脚本执行成功！",
+                Content = "OE-XH脚本已经成功执行！",
                 Duration = 3,
                 Icon = "check-circle",
             })
