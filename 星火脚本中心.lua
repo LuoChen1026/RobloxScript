@@ -304,7 +304,7 @@ local Section = Tab:Section({
 })
 
 Section:Button({
-    Title = "试炼-XH",
+    Title = "试炼-TomTamX",
     Description = "星火汉化",
     Tooltip = "汉化老外的",
     Disabled = false,
@@ -315,7 +315,7 @@ Section:Button({
         if ok then
             WindUI:Notify({
                 Title = "脚本执行成功！",
-                Content = "试炼‑XH脚本已经成功执行！",
+                Content = "试炼‑TomTamX脚本已经成功执行！",
                 Duration = 3,
                 Icon = "check-circle",
             })
