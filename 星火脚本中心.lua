@@ -299,7 +299,7 @@ local Tab = Window:Tab({
 
 local Section = Tab:Section({
     Title = "试炼",
-    Icon = "virus",
+    Icon = "brain",
     Opened = false,
 })
 
