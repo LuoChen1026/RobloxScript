@@ -4,12 +4,6 @@ local Translations = {
 ["By HL_linfeng"]= "星火制作",
 ["NEX-Lexington and Concord"]= "XH-Lexington and Concord",
 ["Toggle"]= "开关",
-[""]= "",
-["Auto Upgrade Income"]= "自动升级收入",
-["Auto Upgrade Box Tier"]= "自动升级箱子等级",
-["Auto Upgrade Alley Tier"]= "自动升级小巷等级",
-["Instant Prompt Interactions"]= "即时提示交互",
-["Teleport To Base"]= "传送回基地",
 }
 
 local function translateText(text)
