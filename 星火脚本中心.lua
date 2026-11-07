@@ -266,18 +266,18 @@ local Section = Tab:Section({
 })
 
 Section:Button({
-    Title = "LC-NEX",
-    Description = "NEX制作",
-    Tooltip = "缝合进来的",
+    Title = "LC-XH",
+    Description = "星火制作",
+    Tooltip = "二改别人的",
     Disabled = false,
     Callback = function()
         local ok, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/LC-NEX.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/LC-XH.lua"))()
         end)
         if ok then
             WindUI:Notify({
                 Title = "脚本执行成功！",
-                Content = "LC‑NEX脚本已经成功执行！",
+                Content = "LC‑XH脚本已经成功执行！",
                 Duration = 3,
                 Icon = "check-circle",
             })
