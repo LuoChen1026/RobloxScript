@@ -292,6 +292,44 @@ Section:Button({
     end
 })
 
+local Tab = Window:Tab({
+    Title = "PVE类",
+    Icon = "virus"
+})
+
+local Section = Tab:Section({
+    Title = "试炼Examination",
+    Icon = "germ",
+    Opened = true,
+})
+
+Section:Button({
+    Title = "试炼-XH",
+    Description = "星火汉化",
+    Tooltip = "汉化老外的",
+    Disabled = false,
+    Callback = function()
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E8%AF%95%E7%82%BC.lua"))()
+        end)
+        if ok then
+            WindUI:Notify({
+                Title = "脚本执行成功！",
+                Content = "试炼‑XH脚本已经成功执行！",
+                Duration = 3,
+                Icon = "check-circle",
+            })
+        else
+            WindUI:Notify({
+                Title = "脚本执行失败",
+                Content = tostring(err),
+                Duration = 4,
+                Icon = "x-circle"
+            })
+        end
+    end
+})
+
 -- Settings Tab
 local ThemeTab = Window:Tab({ Title = "设置", Icon = "settings" })
 
