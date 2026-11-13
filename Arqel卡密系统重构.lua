@@ -42,7 +42,7 @@ local Arqel = {}
 Arqel.Appearance = {
     Title = "星火",
     Subtitle = "输入你的卡密以继续",
-    Icon = "rbxassetid://95721401302279",
+    Icon = "rbxassetid://88589651965141",
     IconSize = UDim2.new(0, 30, 0, 30)
 }
 
@@ -147,7 +147,7 @@ local FallbackIcons = {
     loading = "rbxassetid://116535712789945",
     close = "rbxassetid://6022668916",
     changelog = "rbxassetid://138133190015277",
-    logo = "rbxassetid://95721401302279",
+    logo = "rbxassetid://88589651965141",
     user = "rbxassetid://77400125196692",
     clock = "rbxassetid://87505349362628",
     cart = "rbxassetid://114754518183872",
@@ -157,7 +157,7 @@ local FallbackIcons = {
 local CachedIcons = {}
 local FolderName = "XH KEY"
 local IconsFolder = "Icons"
-local DefaultLogoAsset = "rbxassetid://95721401302279"
+local DefaultLogoAsset = "rbxassetid://88589651965141"
 
 local function isMobile()
     return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
