@@ -17,8 +17,8 @@ Arqel.Links = {
 
 Arqel.Storage = {
     FileName = "XH KEY",
-    Remember = true,
-    AutoLoad = true
+    Remember = false,
+    AutoLoad = false
 }
 
 -- UI选项
@@ -83,5 +83,5 @@ Arqel.Callbacks = {
 Arqel:LaunchJunkie({
     Service = "星火",
     Identifier = "1016287",
-    Provider = "星火"
+    Provider = "尘洛"
 })
