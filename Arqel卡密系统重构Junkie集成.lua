@@ -62,7 +62,7 @@ Arqel.Callbacks = {
     OnVerify = nil,
     OnSuccess = function()
         -- 密钥验证成功后加载你的Hub脚本
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E6%98%9F%E7%81%AB%E8%84%9A%E6%9C%AC%E4%B8%AD%E5%BF%83.luaw"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/LuoChen1026/RobloxScript/main/%E6%98%9F%E7%81%AB%E8%84%9A%E6%9C%AC%E4%B8%AD%E5%BF%83.lua"))()
     end,
     OnFail = function(errorMsg)
         print("失败:", errorMsg)
