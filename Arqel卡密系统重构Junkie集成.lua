@@ -73,7 +73,7 @@ Arqel.Callbacks = {
 }
 -- 星火密钥系统启动
 Arqel:LaunchJunkie({
-    Service = "星火",
+    Service = "XingHuo",
     Identifier = "1016287",
-    Provider = "尘洛"
+    Provider = "ChenLuo"
 })
